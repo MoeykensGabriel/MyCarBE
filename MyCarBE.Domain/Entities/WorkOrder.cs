@@ -33,7 +33,7 @@ public class WorkOrder : BaseEntity
     private static readonly Dictionary<WorkOrderStatus, WorkOrderStatus[]> ValidTransitions = new()
     {
         { WorkOrderStatus.Received,         new[] { WorkOrderStatus.Diagnosing, WorkOrderStatus.Cancelled } },
-        { WorkOrderStatus.Diagnosing,        new[] { WorkOrderStatus.AwaitingApproval, WorkOrderStatus.InProgress, WorkOrderStatus.Cancelled } },
+        { WorkOrderStatus.Diagnosing,        new[] { WorkOrderStatus.AwaitingApproval, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.AwaitingApproval, new[] { WorkOrderStatus.InProgress, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.InProgress,       new[] { WorkOrderStatus.Completed, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.Completed,        new[] { WorkOrderStatus.Delivered, WorkOrderStatus.Cancelled } },
