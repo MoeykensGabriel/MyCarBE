@@ -32,6 +32,10 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    // Deshabilitamos el remapeo de claims — los claims conservan sus nombres JWT estándar.
+    // Sin esto, "sub" → NameIdentifier y "email" → EmailAddress (nombres largos WS-Federation).
+    options.MapInboundClaims = false;
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer           = true,
@@ -41,7 +45,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer              = jwtSettings["Issuer"],
         ValidAudience            = jwtSettings["Audience"],
         IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ClockSkew                = TimeSpan.Zero  // Sin margen de gracia — el token expira exacto
+        ClockSkew                = TimeSpan.Zero
     };
 });
 
