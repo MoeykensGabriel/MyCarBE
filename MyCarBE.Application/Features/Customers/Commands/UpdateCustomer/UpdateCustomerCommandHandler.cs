@@ -36,6 +36,7 @@ public class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustomerComman
         customer.LastName  = request.LastName;
         customer.Phone     = request.Phone;
         customer.Email     = request.Email;
+        customer.FleetId   = request.FleetId;   // null = unlink from fleet
 
         _customerRepository.Update(customer);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
