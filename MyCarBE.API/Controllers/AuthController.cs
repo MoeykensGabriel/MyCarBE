@@ -1,5 +1,7 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Features.Auth.Commands.Login;
 
 namespace MyCarBE.API.Controllers;
@@ -8,11 +10,13 @@ namespace MyCarBE.API.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly ISender _sender;
+    private readonly ISender            _sender;
+    private readonly ICurrentUserService _currentUser;
 
-    public AuthController(ISender sender)
+    public AuthController(ISender sender, ICurrentUserService currentUser)
     {
-        _sender = sender;
+        _sender      = sender;
+        _currentUser = currentUser;
     }
 
     /// <summary>
@@ -26,5 +30,25 @@ public class AuthController : ControllerBase
     {
         var result = await _sender.Send(command, cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Devuelve los datos del usuario autenticado extraídos del JWT.
+    /// Útil para verificar que el token es válido y el rol correcto.
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult Me()
+    {
+        return Ok(new
+        {
+            UserId          = _currentUser.UserId,
+            Email           = _currentUser.Email,
+            Role            = _currentUser.Role,
+            IsAdmin         = _currentUser.IsAdmin,
+            IsAuthenticated = _currentUser.IsAuthenticated
+        });
     }
 }

@@ -6,6 +6,7 @@ using MyCarBE.API.Services;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Extensions;
 using MyCarBE.Data.Extensions;
+using MyCarBE.Data.Services;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -104,5 +105,8 @@ app.UseHttpsRedirection();
 app.UseAuthentication();  // ← primero autenticación
 app.UseAuthorization();   // ← después autorización
 app.MapControllers();
+
+// Seed del Admin al arrancar (solo si no existe)
+await DatabaseSeeder.SeedAdminUserAsync(app.Services);
 
 app.Run();
