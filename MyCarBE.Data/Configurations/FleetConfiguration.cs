@@ -12,7 +12,9 @@ public class FleetConfiguration : IEntityTypeConfiguration<Fleet>
         builder.HasKey(f => f.Id);
 
         builder.Property(f => f.CompanyName).IsRequired().HasMaxLength(200);
-        builder.Property(f => f.TaxId).IsRequired().HasMaxLength(20); // CUIT
+        builder.Property(f => f.TaxId).IsRequired().HasMaxLength(20);   // CUIT
+        builder.Property(f => f.Phone).IsRequired().HasMaxLength(30);
+        builder.Property(f => f.Email).HasMaxLength(150);
         builder.Property(f => f.Address).HasMaxLength(300);
 
         builder.HasIndex(f => f.TaxId).IsUnique();
