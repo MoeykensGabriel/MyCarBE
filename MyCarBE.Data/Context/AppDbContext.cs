@@ -43,6 +43,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
             entityType.SetQueryFilter(filter);
         }
 
+        // WorkOrderStatusChange no hereda BaseEntity (evento inmutable sin soft delete),
+        // pero su WorkOrder sí tiene query filter. Agregamos un filtro matching para
+        // evitar resultados inesperados cuando se accede a StatusChanges directamente.
+        modelBuilder.Entity<WorkOrderStatusChange>()
+            .HasQueryFilter(s => !s.WorkOrder.IsDeleted);
+
         // Seed de roles
         modelBuilder.Entity<ApplicationRole>().HasData(
             new ApplicationRole { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), Name = "Admin",    NormalizedName = "ADMIN" },
