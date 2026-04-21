@@ -23,8 +23,15 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
         => await _context.Set<T>().AddAsync(entity, cancellationToken);
 
+    /// <summary>
+    /// Marks ONLY the root entity as Modified so SaveChangesAsync sets UpdatedAt.
+    /// Does NOT touch related entities — their states (Added/Unchanged) are already
+    /// correct in the ChangeTracker. Using _context.Update(entity) would traverse
+    /// the full graph and re-mark newly-added navigation entries (e.g. WorkOrderStatusChange
+    /// with a manually-set Guid) as Modified, causing a DbUpdateConcurrencyException.
+    /// </summary>
     public void Update(T entity)
-        => _context.Set<T>().Update(entity);
+        => _context.Entry(entity).State = EntityState.Modified;
 
     /// <summary>
     /// Llama a Remove() pero SaveChangesAsync lo intercepta y convierte en soft delete.
