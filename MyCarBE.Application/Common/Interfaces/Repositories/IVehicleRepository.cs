@@ -5,8 +5,15 @@ namespace MyCarBE.Application.Common.Interfaces.Repositories;
 public interface IVehicleRepository : IRepository<Vehicle>
 {
     Task<Vehicle?> GetByLicensePlateAsync(string licensePlate, CancellationToken cancellationToken = default);
+
+    // --- Create checks (no exclusion) ---
     Task<bool> LicensePlateExistsAsync(string licensePlate, CancellationToken cancellationToken = default);
     Task<bool> VINExistsAsync(string vin, CancellationToken cancellationToken = default);
+
+    // --- Update checks (exclude self) ---
+    Task<bool> LicensePlateExistsAsync(string licensePlate, Guid excludeId, CancellationToken cancellationToken = default);
+    Task<bool> VINExistsAsync(string vin, Guid excludeId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Vehicle>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Vehicle>> GetByFleetIdAsync(Guid fleetId, CancellationToken cancellationToken = default);
 }
