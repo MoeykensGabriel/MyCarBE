@@ -7,6 +7,7 @@ using MyCarBE.Application.Common.Interfaces.Repositories;
 using MyCarBE.Data.Context;
 using MyCarBE.Data.Identity;
 using MyCarBE.Data.Repositories;
+using MyCarBE.Data.Services;
 
 namespace MyCarBE.Data.Extensions;
 
@@ -45,6 +46,10 @@ public static class DataLayerExtensions
         services.AddScoped<IVehicleRepository,       VehicleRepository>();
         services.AddScoped<IWorkOrderRepository,     WorkOrderRepository>();
         services.AddScoped<ICatalogServiceRepository, CatalogServiceRepository>();
+
+        // Identity Services
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IIdentityService, IdentityService>();
 
         // FluentValidation — registra todos los validators del assembly de Data
         services.AddValidatorsFromAssembly(typeof(DataLayerExtensions).Assembly);
