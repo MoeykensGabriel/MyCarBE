@@ -2,8 +2,11 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MyCarBE.Application.Common.Interfaces;
+using MyCarBE.Application.Common.Interfaces.Repositories;
 using MyCarBE.Data.Context;
 using MyCarBE.Data.Identity;
+using MyCarBE.Data.Repositories;
 
 namespace MyCarBE.Data.Extensions;
 
@@ -32,6 +35,16 @@ public static class DataLayerExtensions
         })
         .AddRoles<ApplicationRole>()
         .AddEntityFrameworkStores<AppDbContext>();
+
+        // Unit of Work — AppDbContext ya es Scoped, lo exponemos como IUnitOfWork
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
+
+        // Repositorios
+        services.AddScoped<ICustomerRepository,      CustomerRepository>();
+        services.AddScoped<IFleetRepository,         FleetRepository>();
+        services.AddScoped<IVehicleRepository,       VehicleRepository>();
+        services.AddScoped<IWorkOrderRepository,     WorkOrderRepository>();
+        services.AddScoped<ICatalogServiceRepository, CatalogServiceRepository>();
 
         // FluentValidation — registra todos los validators del assembly de Data
         services.AddValidatorsFromAssembly(typeof(DataLayerExtensions).Assembly);

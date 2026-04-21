@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Data.Configurations;
 using MyCarBE.Data.Identity;
 using MyCarBE.Domain.Common;
@@ -8,7 +9,7 @@ using MyCarBE.Domain.Entities;
 
 namespace MyCarBE.Data.Context;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
+public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>, IUnitOfWork
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
