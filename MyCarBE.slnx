@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="MyCarBE.API/MyCarBE.API.csproj" />
+  <Project Path="MyCarBE.Application/MyCarBE.Application.csproj" />
+  <Project Path="MyCarBE.Data/MyCarBE.Data.csproj" />
+  <Project Path="MyCarBE.Domain/MyCarBE.Domain.csproj" />
+</Solution>

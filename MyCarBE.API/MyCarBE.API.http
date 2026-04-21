@@ -1,0 +1,6 @@
+@MyCarBE.API_HostAddress = http://localhost:5216
+
+GET {{MyCarBE.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
