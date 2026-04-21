@@ -1,4 +1,9 @@
+using MyCarBE.Data.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Data Layer (PostgreSQL + Identity + FluentValidation)
+builder.Services.AddDataLayer(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddControllers();
