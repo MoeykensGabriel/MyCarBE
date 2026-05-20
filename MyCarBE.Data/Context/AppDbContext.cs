@@ -26,6 +26,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<DeclaredServiceHistory> DeclaredServiceHistories => Set<DeclaredServiceHistory>();
     public DbSet<WorkOrderApprovalToken> WorkOrderApprovalTokens => Set<WorkOrderApprovalToken>();
     public DbSet<Mechanic> Mechanics => Set<Mechanic>();
+    public DbSet<Receptionist> Receptionists => Set<Receptionist>();
     public DbSet<WorkshopSettings> WorkshopSettings => Set<WorkshopSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -57,7 +58,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
         modelBuilder.Entity<ApplicationRole>().HasData(
             new ApplicationRole { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), Name = "Admin",    NormalizedName = "ADMIN" },
             new ApplicationRole { Id = Guid.Parse("00000000-0000-0000-0000-000000000002"), Name = "Customer", NormalizedName = "CUSTOMER" },
-            new ApplicationRole { Id = Guid.Parse("00000000-0000-0000-0000-000000000003"), Name = "Mechanic", NormalizedName = "MECHANIC" }
+            new ApplicationRole { Id = Guid.Parse("00000000-0000-0000-0000-000000000003"), Name = "Mechanic",     NormalizedName = "MECHANIC" },
+            new ApplicationRole { Id = Guid.Parse("00000000-0000-0000-0000-000000000004"), Name = "Receptionist", NormalizedName = "RECEPTIONIST" }
         );
     }
 

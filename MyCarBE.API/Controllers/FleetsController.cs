@@ -40,7 +40,7 @@ public class FleetsController : ControllerBase
     /// Retorna todas las flotas. Opcionalmente filtra por nombre de empresa o CUIT/RUC.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(IReadOnlyList<FleetDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] string? search, CancellationToken cancellationToken)
     {
@@ -52,7 +52,7 @@ public class FleetsController : ControllerBase
     /// Retorna el detalle de una flota incluyendo sus contactos y vehículos.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(FleetDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -65,7 +65,7 @@ public class FleetsController : ControllerBase
     /// Crea una nueva flota (empresa B2B). Retorna el Id de la flota creada.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

@@ -49,6 +49,7 @@ public static class DataLayerExtensions
         services.AddScoped<IWorkOrderApprovalTokenRepository, WorkOrderApprovalTokenRepository>();
         services.AddScoped<IDashboardRepository,             DashboardRepository>();
         services.AddScoped<IMechanicRepository,              MechanicRepository>();
+        services.AddScoped<IReceptionistRepository,          ReceptionistRepository>();
         services.AddScoped<IWorkshopSettingsRepository,      WorkshopSettingsRepository>();
 
         // Identity Services

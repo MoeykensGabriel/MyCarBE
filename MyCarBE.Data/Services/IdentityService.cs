@@ -14,6 +14,7 @@ public class IdentityService : IIdentityService
     private readonly IJwtTokenService              _jwtTokenService;
     private readonly ICustomerRepository           _customerRepository;
     private readonly IMechanicRepository           _mechanicRepository;
+    private readonly IReceptionistRepository       _receptionistRepository;
     private readonly IConfiguration                _configuration;
 
     public IdentityService(
@@ -21,13 +22,15 @@ public class IdentityService : IIdentityService
         IJwtTokenService jwtTokenService,
         ICustomerRepository customerRepository,
         IMechanicRepository mechanicRepository,
+        IReceptionistRepository receptionistRepository,
         IConfiguration configuration)
     {
-        _userManager        = userManager;
-        _jwtTokenService    = jwtTokenService;
-        _customerRepository = customerRepository;
-        _mechanicRepository = mechanicRepository;
-        _configuration      = configuration;
+        _userManager            = userManager;
+        _jwtTokenService        = jwtTokenService;
+        _customerRepository     = customerRepository;
+        _mechanicRepository     = mechanicRepository;
+        _receptionistRepository = receptionistRepository;
+        _configuration          = configuration;
     }
 
     public async Task<AuthResponseDto?> LoginAsync(string email, string password, CancellationToken cancellationToken = default)
@@ -70,6 +73,16 @@ public class IdentityService : IIdentityService
                     return null; // mecánico desactivado no puede ingresar
                 mechanicId = mechanic.Id;
                 fullName   = $"{mechanic.FirstName} {mechanic.LastName}".Trim();
+            }
+        }
+        else if (role == "Receptionist")
+        {
+            var receptionist = await _receptionistRepository.GetByApplicationUserIdAsync(user.Id, cancellationToken);
+            if (receptionist is not null)
+            {
+                if (!receptionist.IsActive)
+                    return null; // recepcionista desactivado no puede ingresar
+                fullName = $"{receptionist.FirstName} {receptionist.LastName}".Trim();
             }
         }
 

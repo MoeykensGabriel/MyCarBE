@@ -31,9 +31,9 @@ public class GetVehiclesByOwnerQueryHandler : IRequestHandler<GetVehiclesByOwner
         Guid? customerId;
         Guid? fleetId;
 
-        if (_currentUser.IsAdmin)
+        if (_currentUser.IsAdmin || _currentUser.IsReceptionist)
         {
-            // Admin respeta los filtros del query
+            // Admin y Receptionist respetan los filtros del query (búsqueda por patente, etc.)
             customerId = request.CustomerId;
             fleetId    = request.FleetId;
         }

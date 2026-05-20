@@ -73,7 +73,7 @@ public class WorkOrdersController : ControllerBase
     /// Abre una nueva orden de trabajo para un vehículo. Estado inicial: Received. Solo Admin.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

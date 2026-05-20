@@ -43,7 +43,7 @@ public class CustomersController : ControllerBase
     /// Solo Admin.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(PagedResult<CustomerDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? search,
@@ -72,7 +72,7 @@ public class CustomersController : ControllerBase
     /// Solo Admin.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(CreateCustomerResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

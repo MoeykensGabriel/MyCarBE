@@ -28,6 +28,9 @@ public class WorkOrder : BaseEntity
 
     public decimal TotalAmount { get; set; }
 
+    // Usuario que creó la orden (Admin o Receptionist). Nullable porque órdenes previas a este campo no lo tienen.
+    public Guid? CreatedByUserId { get; set; }
+
     // Navegación
     public ICollection<WorkOrderService> Services { get; set; } = new List<WorkOrderService>();
     public ICollection<WorkOrderPhoto> Photos { get; set; } = new List<WorkOrderPhoto>();

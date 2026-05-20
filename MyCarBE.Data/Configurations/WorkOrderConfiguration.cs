@@ -15,11 +15,15 @@ public class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
         builder.Property(w => w.CustomerNote).HasMaxLength(1000);
         builder.Property(w => w.TechnicianNote).HasMaxLength(1000);
 
-        // CustomerIdAtEntry y FleetIdAtEntry se congelan al crear — nunca se modifican
+        // CustomerIdAtEntry, FleetIdAtEntry y CreatedByUserId se congelan al crear — nunca se modifican
         builder.Property(w => w.CustomerIdAtEntry).Metadata.SetAfterSaveBehavior(
             Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
         builder.Property(w => w.FleetIdAtEntry).Metadata.SetAfterSaveBehavior(
             Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
+        builder.Property(w => w.CreatedByUserId).Metadata.SetAfterSaveBehavior(
+            Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
+
+        builder.HasIndex(w => w.CreatedByUserId);
 
         builder.HasOne(w => w.Vehicle)
                .WithMany(v => v.WorkOrders)

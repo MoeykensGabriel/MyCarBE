@@ -40,6 +40,9 @@ public class CurrentUserService : ICurrentUserService
     public bool IsMechanic =>
         User?.IsInRole("Mechanic") ?? false;
 
+    public bool IsReceptionist =>
+        User?.IsInRole("Receptionist") ?? false;
+
     public bool IsAuthenticated =>
         User?.Identity?.IsAuthenticated ?? false;
 

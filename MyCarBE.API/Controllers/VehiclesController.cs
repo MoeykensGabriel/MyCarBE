@@ -59,7 +59,7 @@ public class VehiclesController : ControllerBase
     /// Registra un nuevo vehículo. Debe pertenecer a un Cliente o a una Flota (XOR). Solo Admin.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

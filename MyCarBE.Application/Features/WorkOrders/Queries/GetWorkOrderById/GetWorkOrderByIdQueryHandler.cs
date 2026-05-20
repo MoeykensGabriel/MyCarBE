@@ -30,13 +30,17 @@ public class GetWorkOrderByIdQueryHandler : IRequestHandler<GetWorkOrderByIdQuer
 
         if (!_currentUser.IsAdmin)
         {
-            var ownedByCustomer = _currentUser.CustomerId.HasValue &&
-                                  workOrder.CustomerIdAtEntry == _currentUser.CustomerId;
+            var ownedByCustomer    = _currentUser.CustomerId.HasValue &&
+                                     workOrder.CustomerIdAtEntry == _currentUser.CustomerId;
 
-            var ownedByFleet    = _currentUser.FleetId.HasValue &&
-                                  workOrder.FleetIdAtEntry == _currentUser.FleetId;
+            var ownedByFleet       = _currentUser.FleetId.HasValue &&
+                                     workOrder.FleetIdAtEntry == _currentUser.FleetId;
 
-            if (!ownedByCustomer && !ownedByFleet)
+            // Receptionist solo puede ver la orden que ella misma creó (pantalla de confirmación).
+            var createdByThisUser  = _currentUser.IsReceptionist &&
+                                     workOrder.CreatedByUserId == _currentUser.UserId;
+
+            if (!ownedByCustomer && !ownedByFleet && !createdByThisUser)
                 throw new NotFoundException(nameof(Domain.Entities.WorkOrder), request.Id);
         }
 

@@ -41,6 +41,7 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             // Snapshot owner at the moment the work order is opened — frozen by EF config
             CustomerIdAtEntry   = vehicle.CustomerId,
             FleetIdAtEntry      = vehicle.FleetId,
+            CreatedByUserId     = _currentUser.UserId,
         };
 
         // Initializes CurrentStatus = Received and records first StatusChange event

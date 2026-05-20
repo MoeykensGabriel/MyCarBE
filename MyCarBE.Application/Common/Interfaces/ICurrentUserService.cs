@@ -12,6 +12,7 @@ public interface ICurrentUserService
     string Role { get; }
     bool IsAdmin { get; }
     bool IsMechanic { get; }
+    bool IsReceptionist { get; }
     bool IsAuthenticated { get; }
 
     /// <summary>
