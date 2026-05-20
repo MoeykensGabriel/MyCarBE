@@ -10,11 +10,18 @@ public class WorkOrder : BaseEntity
 
     // Snapshots del dueño al momento de apertura — se congelan y nunca se modifican
     public Guid? CustomerIdAtEntry { get; set; }
+    public Customer? CustomerAtEntry { get; set; }
+
     public Guid? FleetIdAtEntry { get; set; }
+    public Fleet? FleetAtEntry { get; set; }
 
     public int MileageAtEntry { get; set; }
     public string? CustomerNote { get; set; }
     public string? TechnicianNote { get; set; }
+
+    // Empleado que trajo el vehículo (solo para flotas, opcional)
+    public string? ContactPersonName { get; set; }
+    public string? ContactPersonPhone { get; set; }
 
     // Denormalizado para queries rápidas — la fuente de verdad es StatusChanges
     public WorkOrderStatus CurrentStatus { get; set; }
@@ -34,7 +41,11 @@ public class WorkOrder : BaseEntity
     {
         { WorkOrderStatus.Received,         new[] { WorkOrderStatus.Diagnosing, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.Diagnosing,        new[] { WorkOrderStatus.AwaitingApproval, WorkOrderStatus.Cancelled } },
-        { WorkOrderStatus.AwaitingApproval, new[] { WorkOrderStatus.InProgress, WorkOrderStatus.Cancelled } },
+        // AwaitingApproval ahora pasa a Approved (el cliente aprobó pero el auto puede no haber llegado).
+        // Mantenemos también el atajo directo a InProgress por si el admin quiere saltearlo.
+        { WorkOrderStatus.AwaitingApproval, new[] { WorkOrderStatus.Approved, WorkOrderStatus.InProgress, WorkOrderStatus.Cancelled } },
+        // Aprobado: ya hay luz verde del cliente. Cuando llega el vehículo / arranca el trabajo, va a InProgress.
+        { WorkOrderStatus.Approved,         new[] { WorkOrderStatus.InProgress, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.InProgress,       new[] { WorkOrderStatus.Completed, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.Completed,        new[] { WorkOrderStatus.Delivered, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.Delivered,        Array.Empty<WorkOrderStatus>() },
@@ -55,9 +66,22 @@ public class WorkOrder : BaseEntity
             throw new InvalidOperationException(
                 $"Invalid transition: cannot move from '{CurrentStatus}' to '{newStatus}'.");
 
+        // Regla de negocio: solo se puede pasar a Completed si TODOS los servicios
+        // activos fueron finalizados por sus mecánicos.
+        if (newStatus == WorkOrderStatus.Completed)
+        {
+            var pending = Services
+                .Where(s => !s.IsDeleted &&
+                            s.AssignmentStatus != Enums.WorkOrderServiceAssignmentStatus.Completed)
+                .ToList();
+
+            if (pending.Count > 0)
+                throw new InvalidOperationException(
+                    "No se puede completar la orden: hay servicios pendientes de finalizar por mecánicos.");
+        }
+
         StatusChanges.Add(new WorkOrderStatusChange
         {
-            Id = Guid.NewGuid(),
             WorkOrderId = Id,
             FromStatus = CurrentStatus,
             ToStatus = newStatus,

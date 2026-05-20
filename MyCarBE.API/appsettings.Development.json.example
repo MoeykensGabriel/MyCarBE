@@ -1,0 +1,24 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=MyCar-DATABASE;Username=postgres;Password=YOUR_DB_PASSWORD"
+  },
+  "JwtSettings": {
+    "SecretKey": "REPLACE_WITH_A_RANDOM_SECRET_MIN_32_CHARS",
+    "Issuer": "MyCarBE",
+    "Audience": "MyCarBE",
+    "ExpirationInMinutes": 60
+  },
+  "EmailSettings": {
+    "Host": "smtp.gmail.com",
+    "Port": "587",
+    "User": "your-email@gmail.com",
+    "Password": "YOUR_GMAIL_APP_PASSWORD",
+    "From": "your-email@gmail.com"
+  }
+}

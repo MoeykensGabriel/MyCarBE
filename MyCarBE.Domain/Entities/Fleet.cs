@@ -4,9 +4,11 @@ namespace MyCarBE.Domain.Entities;
 
 public class Fleet : BaseEntity
 {
-    public string CompanyName { get; set; } = string.Empty;
-    public string TaxId { get; set; } = string.Empty;       // CUIT — único
-    public string? Address { get; set; }
+    public string  CompanyName { get; set; } = string.Empty;
+    public string  TaxId      { get; set; } = string.Empty;  // CUIT — único
+    public string  Phone      { get; set; } = string.Empty;
+    public string? Email      { get; set; }
+    public string? Address    { get; set; }
 
     // Navegación
     public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
