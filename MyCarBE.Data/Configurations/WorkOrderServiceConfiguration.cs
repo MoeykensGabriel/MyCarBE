@@ -53,5 +53,35 @@ public class WorkOrderServiceConfiguration : IEntityTypeConfiguration<WorkOrderS
 
         builder.HasIndex(s => s.AssignedMechanicId);
         builder.HasIndex(s => s.AssignmentStatus);
+
+        // ── Área (para agrupar el calendario) ────────────────────────────────
+        builder.HasOne(s => s.Area)
+               .WithMany()
+               .HasForeignKey(s => s.AreaId)
+               .IsRequired(false)
+               .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(s => s.AreaId);
+        builder.HasIndex(s => new { s.ScheduledStart, s.ScheduledEnd });
+
+        // ── Cotización item-por-item ──────────────────────────────────────────
+        builder.Property(s => s.ApprovalStatus)
+               .HasConversion<int>()
+               .HasDefaultValue(Domain.Enums.QuoteItemApprovalStatus.Pending);
+
+        builder.HasIndex(s => s.AlternativeGroupId);
+
+        // ── Concurrencia ─────────────────────────────────────────────────────
+        // Optimistic concurrency token usando la columna xmin del sistema en
+        // Postgres (sin nueva columna física — shadow property mapeada a xmin,
+        // que PG ya mantiene por cada fila).
+        // Crítico para el ClaimCommand (S3.5): dos mecánicos clickeando
+        // "Tomar trabajo" al mismo tiempo — el segundo recibe
+        // DbUpdateConcurrencyException y el handler lo traduce a 409 Conflict.
+        builder.Property<uint>("xmin")
+               .HasColumnType("xid")
+               .HasColumnName("xmin")
+               .ValueGeneratedOnAddOrUpdate()
+               .IsConcurrencyToken();
     }
 }

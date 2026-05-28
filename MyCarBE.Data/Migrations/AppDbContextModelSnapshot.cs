@@ -22,6 +22,21 @@ namespace MyCarBE.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AreaMechanic", b =>
+                {
+                    b.Property<Guid>("AreasId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MechanicsId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("AreasId", "MechanicsId");
+
+                    b.HasIndex("MechanicsId");
+
+                    b.ToTable("MechanicAreas", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
@@ -249,6 +264,136 @@ namespace MyCarBE.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("MyCarBE.Domain.Entities.Area", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Areas", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Motor",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Frenos",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Tren delantero",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Suspensión",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Eléctrico",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000006"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Transmisión",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000007"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Escape",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000008"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Carrocería",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000009"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Aire acondicionado",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-00000000000a"),
+                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Diagnóstico computarizado",
+                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
             modelBuilder.Entity("MyCarBE.Domain.Entities.CatalogService", b =>
                 {
                     b.Property<Guid>("Id")
@@ -454,6 +599,147 @@ namespace MyCarBE.Data.Migrations
                     b.ToTable("Fleets", (string)null);
                 });
 
+            modelBuilder.Entity("MyCarBE.Domain.Entities.InspectionReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AreaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Findings")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<bool>("HasIssue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsNoFindings")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid?>("MechanicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AreaId");
+
+                    b.HasIndex("MechanicId");
+
+                    b.HasIndex("WorkOrderId", "AreaId")
+                        .IsUnique();
+
+                    b.ToTable("InspectionReports", (string)null);
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.InspectionReportProposedPart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<decimal?>("EstimatedUnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("InspectionReportId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ProductCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InspectionReportId");
+
+                    b.ToTable("InspectionReportProposedParts", (string)null);
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.InspectionReportProposedService", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int?>("EstimatedDays")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("EstimatedLaborCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("InspectionReportId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InspectionReportId");
+
+                    b.ToTable("InspectionReportProposedServices", (string)null);
+                });
+
             modelBuilder.Entity("MyCarBE.Domain.Entities.MaintenanceAlert", b =>
                 {
                     b.Property<Guid>("Id")
@@ -566,6 +852,110 @@ namespace MyCarBE.Data.Migrations
                     b.HasIndex("IsActive");
 
                     b.ToTable("Mechanics", (string)null);
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.PartsStockRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ExternalReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LicensePlateSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LicensePlateSnapshot");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("WorkOrderId")
+                        .IsUnique();
+
+                    b.ToTable("PartsStockRequests", (string)null);
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.PartsStockRequestItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("PartsStockRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("WorkOrderPartId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PartsStockRequestId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("WorkOrderPartId");
+
+                    b.ToTable("PartsStockRequestItems", (string)null);
                 });
 
             modelBuilder.Entity("MyCarBE.Domain.Entities.Receptionist", b =>
@@ -694,6 +1084,10 @@ namespace MyCarBE.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("TripToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -719,6 +1113,10 @@ namespace MyCarBE.Data.Migrations
                     b.HasIndex("LicensePlate")
                         .IsUnique();
 
+                    b.HasIndex("TripToken")
+                        .IsUnique()
+                        .HasFilter("\"TripToken\" IS NOT NULL");
+
                     b.HasIndex("VIN")
                         .IsUnique()
                         .HasFilter("\"VIN\" IS NOT NULL");
@@ -727,6 +1125,234 @@ namespace MyCarBE.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_Vehicles_Owner_XOR", "(\"CustomerId\" IS NOT NULL AND \"FleetId\" IS NULL) OR (\"CustomerId\" IS NULL AND \"FleetId\" IS NOT NULL)");
                         });
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("DocumentType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("ExpiresOn")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("IssuingEntity")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresOn");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("VehicleDocuments", (string)null);
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleTire", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("ExpectedLifeKm")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("InitialTreadDepthMm")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<int>("InstalledAtKm")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("InstalledOn")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReplacedAtKm")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly?>("ReplacedOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("SizeSpec")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleId");
+
+                    b.HasIndex("VehicleId", "Position")
+                        .IsUnique()
+                        .HasFilter("\"IsActive\" = TRUE AND \"IsDeleted\" = FALSE");
+
+                    b.ToTable("VehicleTires", (string)null);
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleTireMeasurement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("CenterDepthMm")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<decimal>("InnerDepthMm")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("MeasuredByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("MeasuredOn")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<decimal>("OuterDepthMm")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("VehicleMileageAtMeasurement")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("VehicleTireId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleTireId");
+
+                    b.HasIndex("VehicleTireId", "MeasuredOn");
+
+                    b.ToTable("VehicleTireMeasurements", (string)null);
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleTrip", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DriverDocument")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("DriverName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int?>("EndKm")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("StartKm")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAt");
+
+                    b.HasIndex("VehicleId");
+
+                    b.HasIndex("VehicleId", "Status");
+
+                    b.ToTable("VehicleTrips", (string)null);
                 });
 
             modelBuilder.Entity("MyCarBE.Domain.Entities.WorkOrder", b =>
@@ -769,6 +1395,13 @@ namespace MyCarBE.Data.Migrations
                     b.Property<int>("MileageAtEntry")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("QuoteExpiresAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ServiceReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<string>("TechnicianNote")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -789,6 +1422,9 @@ namespace MyCarBE.Data.Migrations
                     b.HasIndex("CustomerIdAtEntry");
 
                     b.HasIndex("FleetIdAtEntry");
+
+                    b.HasIndex("QuoteExpiresAt")
+                        .HasFilter("\"QuoteExpiresAt\" IS NOT NULL");
 
                     b.HasIndex("VehicleId");
 
@@ -840,6 +1476,69 @@ namespace MyCarBE.Data.Migrations
                     b.ToTable("WorkOrderApprovalTokens", (string)null);
                 });
 
+            modelBuilder.Entity("MyCarBE.Domain.Entities.WorkOrderPart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AlternativeGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ApprovalStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("FrozenAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ProductCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tier")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlternativeGroupId");
+
+                    b.HasIndex("ProductCode");
+
+                    b.HasIndex("WorkOrderId");
+
+                    b.ToTable("WorkOrderParts", (string)null);
+                });
+
             modelBuilder.Entity("MyCarBE.Domain.Entities.WorkOrderPhoto", b =>
                 {
                     b.Property<Guid>("Id")
@@ -855,6 +1554,9 @@ namespace MyCarBE.Data.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid?>("InspectionReportId")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -881,6 +1583,8 @@ namespace MyCarBE.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("InspectionReportId");
+
                     b.HasIndex("WorkOrderId");
 
                     b.HasIndex("WorkOrderServiceId");
@@ -896,6 +1600,17 @@ namespace MyCarBE.Data.Migrations
 
                     b.Property<DateTime?>("AcceptedAt")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid?>("AlternativeGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ApprovalStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid?>("AreaId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("AssignedMechanicId")
                         .HasColumnType("uuid");
@@ -922,10 +1637,16 @@ namespace MyCarBE.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<int?>("EstimatedDays")
+                        .HasColumnType("integer");
+
                     b.Property<int>("EstimatedDurationMinutesSnapshot")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("FrozenAt")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -949,13 +1670,29 @@ namespace MyCarBE.Data.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("ScheduledEnd")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("ScheduledStart")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid>("WorkOrderId")
                         .HasColumnType("uuid");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AlternativeGroupId");
+
+                    b.HasIndex("AreaId");
 
                     b.HasIndex("AssignedMechanicId");
 
@@ -964,6 +1701,8 @@ namespace MyCarBE.Data.Migrations
                     b.HasIndex("CatalogServiceId");
 
                     b.HasIndex("WorkOrderId");
+
+                    b.HasIndex("ScheduledStart", "ScheduledEnd");
 
                     b.ToTable("WorkOrderServices", (string)null);
                 });
@@ -1026,6 +1765,21 @@ namespace MyCarBE.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("WorkshopSettings", (string)null);
+                });
+
+            modelBuilder.Entity("AreaMechanic", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.Area", null)
+                        .WithMany()
+                        .HasForeignKey("AreasId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyCarBE.Domain.Entities.Mechanic", null)
+                        .WithMany()
+                        .HasForeignKey("MechanicsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -1100,6 +1854,54 @@ namespace MyCarBE.Data.Migrations
                     b.Navigation("Vehicle");
                 });
 
+            modelBuilder.Entity("MyCarBE.Domain.Entities.InspectionReport", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.Area", "Area")
+                        .WithMany()
+                        .HasForeignKey("AreaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MyCarBE.Domain.Entities.Mechanic", "Mechanic")
+                        .WithMany()
+                        .HasForeignKey("MechanicId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MyCarBE.Domain.Entities.WorkOrder", "WorkOrder")
+                        .WithMany("InspectionReports")
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Area");
+
+                    b.Navigation("Mechanic");
+
+                    b.Navigation("WorkOrder");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.InspectionReportProposedPart", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.InspectionReport", "InspectionReport")
+                        .WithMany("ProposedParts")
+                        .HasForeignKey("InspectionReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InspectionReport");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.InspectionReportProposedService", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.InspectionReport", "InspectionReport")
+                        .WithMany("ProposedServices")
+                        .HasForeignKey("InspectionReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InspectionReport");
+                });
+
             modelBuilder.Entity("MyCarBE.Domain.Entities.MaintenanceAlert", b =>
                 {
                     b.HasOne("MyCarBE.Domain.Entities.Vehicle", "Vehicle")
@@ -1109,6 +1911,28 @@ namespace MyCarBE.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.PartsStockRequest", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.WorkOrder", "WorkOrder")
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkOrder");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.PartsStockRequestItem", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.PartsStockRequest", "PartsStockRequest")
+                        .WithMany("Items")
+                        .HasForeignKey("PartsStockRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PartsStockRequest");
                 });
 
             modelBuilder.Entity("MyCarBE.Domain.Entities.Vehicle", b =>
@@ -1126,6 +1950,50 @@ namespace MyCarBE.Data.Migrations
                     b.Navigation("Customer");
 
                     b.Navigation("Fleet");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleDocument", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.Vehicle", "Vehicle")
+                        .WithMany("Documents")
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleTire", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.Vehicle", "Vehicle")
+                        .WithMany("Tires")
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleTireMeasurement", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.VehicleTire", "VehicleTire")
+                        .WithMany("Measurements")
+                        .HasForeignKey("VehicleTireId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("VehicleTire");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleTrip", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.Vehicle", "Vehicle")
+                        .WithMany("Trips")
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
                 });
 
             modelBuilder.Entity("MyCarBE.Domain.Entities.WorkOrder", b =>
@@ -1164,8 +2032,24 @@ namespace MyCarBE.Data.Migrations
                     b.Navigation("WorkOrder");
                 });
 
+            modelBuilder.Entity("MyCarBE.Domain.Entities.WorkOrderPart", b =>
+                {
+                    b.HasOne("MyCarBE.Domain.Entities.WorkOrder", "WorkOrder")
+                        .WithMany("Parts")
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkOrder");
+                });
+
             modelBuilder.Entity("MyCarBE.Domain.Entities.WorkOrderPhoto", b =>
                 {
+                    b.HasOne("MyCarBE.Domain.Entities.InspectionReport", "InspectionReport")
+                        .WithMany("Photos")
+                        .HasForeignKey("InspectionReportId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("MyCarBE.Domain.Entities.WorkOrder", "WorkOrder")
                         .WithMany("Photos")
                         .HasForeignKey("WorkOrderId")
@@ -1177,6 +2061,8 @@ namespace MyCarBE.Data.Migrations
                         .HasForeignKey("WorkOrderServiceId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.Navigation("InspectionReport");
+
                     b.Navigation("WorkOrder");
 
                     b.Navigation("WorkOrderService");
@@ -1184,6 +2070,11 @@ namespace MyCarBE.Data.Migrations
 
             modelBuilder.Entity("MyCarBE.Domain.Entities.WorkOrderService", b =>
                 {
+                    b.HasOne("MyCarBE.Domain.Entities.Area", "Area")
+                        .WithMany()
+                        .HasForeignKey("AreaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MyCarBE.Domain.Entities.Mechanic", "AssignedMechanic")
                         .WithMany("AssignedServices")
                         .HasForeignKey("AssignedMechanicId")
@@ -1199,6 +2090,8 @@ namespace MyCarBE.Data.Migrations
                         .HasForeignKey("WorkOrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Area");
 
                     b.Navigation("AssignedMechanic");
 
@@ -1230,22 +2123,51 @@ namespace MyCarBE.Data.Migrations
                     b.Navigation("Vehicles");
                 });
 
+            modelBuilder.Entity("MyCarBE.Domain.Entities.InspectionReport", b =>
+                {
+                    b.Navigation("Photos");
+
+                    b.Navigation("ProposedParts");
+
+                    b.Navigation("ProposedServices");
+                });
+
             modelBuilder.Entity("MyCarBE.Domain.Entities.Mechanic", b =>
                 {
                     b.Navigation("AssignedServices");
+                });
+
+            modelBuilder.Entity("MyCarBE.Domain.Entities.PartsStockRequest", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("MyCarBE.Domain.Entities.Vehicle", b =>
                 {
                     b.Navigation("DeclaredServiceHistories");
 
+                    b.Navigation("Documents");
+
                     b.Navigation("MaintenanceAlerts");
+
+                    b.Navigation("Tires");
+
+                    b.Navigation("Trips");
 
                     b.Navigation("WorkOrders");
                 });
 
+            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleTire", b =>
+                {
+                    b.Navigation("Measurements");
+                });
+
             modelBuilder.Entity("MyCarBE.Domain.Entities.WorkOrder", b =>
                 {
+                    b.Navigation("InspectionReports");
+
+                    b.Navigation("Parts");
+
                     b.Navigation("Photos");
 
                     b.Navigation("Services");

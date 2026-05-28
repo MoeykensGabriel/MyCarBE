@@ -37,4 +37,24 @@ public interface IWorkOrderRepository : IRepository<WorkOrder>
         Guid mechanicId,
         Domain.Enums.WorkOrderServiceAssignmentStatus? status,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Órdenes en estado UnderInspection con Vehicle y los InspectionReports (solo AreaId)
+    /// — usado por la query de "inspecciones pendientes" para mecánicos.
+    /// </summary>
+    Task<IReadOnlyList<WorkOrder>> GetUnderInspectionWithReportsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Pool de trabajos disponibles para el mecánico: servicios Unassigned + Approved
+    /// pertenecientes a WOs en InProgress. Incluye Vehicle y propietario para mostrar contexto.
+    /// Ordenados por CreatedAt asc (FIFO — los más viejos primero).
+    /// </summary>
+    Task<IReadOnlyList<WorkOrderService>> GetAvailableServicesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Servicios agendados que intersectan el rango [from, to]: ScheduledStart &lt;= to AND ScheduledEnd &gt;= from.
+    /// Incluye WorkOrder.Vehicle, AssignedMechanic, Area. Ignora servicios sin scheduling.
+    /// </summary>
+    Task<IReadOnlyList<WorkOrderService>> GetScheduledServicesAsync(
+        DateTime from, DateTime to, CancellationToken cancellationToken = default);
 }

@@ -12,7 +12,12 @@ public class Mechanic : BaseEntity
     public string LastName  { get; set; } = string.Empty;
     public string Email     { get; set; } = string.Empty; // único
     public string? Phone     { get; set; }
-    public string? Specialty { get; set; } // texto libre: "Motor", "Frenos", etc.
+
+    /// <summary>
+    /// DEPRECATED: especialidad como texto libre. La fuente de verdad ahora es Areas (M-a-N).
+    /// Se conserva para no perder datos históricos; nuevas asignaciones usan Areas.
+    /// </summary>
+    public string? Specialty { get; set; }
 
     public bool IsActive { get; set; } = true;
 
@@ -21,4 +26,7 @@ public class Mechanic : BaseEntity
 
     // Navegación (queries de "mis servicios asignados")
     public ICollection<WorkOrderService> AssignedServices { get; set; } = new List<WorkOrderService>();
+
+    // Áreas de especialidad — relación M-a-N con Area
+    public ICollection<Area> Areas { get; set; } = new List<Area>();
 }

@@ -5,6 +5,8 @@ using MapsterMapper;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using MyCarBE.Application.Common.Behaviours;
+using MyCarBE.Application.Common.Interfaces;
+using MyCarBE.Application.Features.StockRequests.Services;
 
 namespace MyCarBE.Application.Extensions;
 
@@ -28,6 +30,10 @@ public static class ApplicationLayerExtensions
         config.Scan(assembly);
         services.AddSingleton(config);
         services.AddScoped<IMapper, ServiceMapper>();
+
+        // Servicios de orquestación de Application
+        services.AddScoped<IQuoteDeliveryService, QuoteDeliveryService>();
+        services.AddScoped<IStockRequestOrchestrator, StockRequestOrchestrator>();
 
         return services;
     }

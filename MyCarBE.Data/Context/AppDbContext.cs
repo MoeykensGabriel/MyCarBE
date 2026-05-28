@@ -20,6 +20,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
     public DbSet<WorkOrderStatusChange> WorkOrderStatusChanges => Set<WorkOrderStatusChange>();
     public DbSet<WorkOrderService> WorkOrderServices => Set<WorkOrderService>();
+    public DbSet<WorkOrderPart> WorkOrderParts => Set<WorkOrderPart>();
     public DbSet<WorkOrderPhoto> WorkOrderPhotos => Set<WorkOrderPhoto>();
     public DbSet<CatalogService> CatalogServices => Set<CatalogService>();
     public DbSet<MaintenanceAlert> MaintenanceAlerts => Set<MaintenanceAlert>();
@@ -27,7 +28,17 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<WorkOrderApprovalToken> WorkOrderApprovalTokens => Set<WorkOrderApprovalToken>();
     public DbSet<Mechanic> Mechanics => Set<Mechanic>();
     public DbSet<Receptionist> Receptionists => Set<Receptionist>();
+    public DbSet<Area> Areas => Set<Area>();
+    public DbSet<InspectionReport> InspectionReports => Set<InspectionReport>();
+    public DbSet<InspectionReportProposedService> InspectionReportProposedServices => Set<InspectionReportProposedService>();
+    public DbSet<InspectionReportProposedPart> InspectionReportProposedParts => Set<InspectionReportProposedPart>();
     public DbSet<WorkshopSettings> WorkshopSettings => Set<WorkshopSettings>();
+    public DbSet<PartsStockRequest> PartsStockRequests => Set<PartsStockRequest>();
+    public DbSet<PartsStockRequestItem> PartsStockRequestItems => Set<PartsStockRequestItem>();
+    public DbSet<VehicleDocument> VehicleDocuments => Set<VehicleDocument>();
+    public DbSet<VehicleTrip> VehicleTrips => Set<VehicleTrip>();
+    public DbSet<VehicleTire> VehicleTires => Set<VehicleTire>();
+    public DbSet<VehicleTireMeasurement> VehicleTireMeasurements => Set<VehicleTireMeasurement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

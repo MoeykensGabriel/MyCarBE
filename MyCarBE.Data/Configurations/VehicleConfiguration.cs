@@ -29,6 +29,11 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
         builder.HasIndex(v => v.LicensePlate).IsUnique();
         builder.HasIndex(v => v.VIN).IsUnique().HasFilter("\"VIN\" IS NOT NULL");
 
+        // Token público para la estación de viajes (QR del chofer). Único y filtrado
+        // para permitir múltiples vehículos sin token todavía.
+        builder.Property(v => v.TripToken).HasMaxLength(64);
+        builder.HasIndex(v => v.TripToken).IsUnique().HasFilter("\"TripToken\" IS NOT NULL");
+
         builder.HasOne(v => v.Customer)
                .WithMany(c => c.Vehicles)
                .HasForeignKey(v => v.CustomerId)

@@ -8,4 +8,9 @@ public class ConflictException : Exception
 {
     public ConflictException(string entityName, string field, object value)
         : base($"'{entityName}' with {field} '{value}' already exists.") { }
+
+    /// <summary>
+    /// Overload para conflictos arbitrarios (ej. race conditions, optimistic concurrency).
+    /// </summary>
+    public ConflictException(string message) : base(message) { }
 }

@@ -24,5 +24,12 @@ public class WorkOrderPhotoConfiguration : IEntityTypeConfiguration<WorkOrderPho
                .WithMany(s => s.Photos)
                .HasForeignKey(p => p.WorkOrderServiceId)
                .OnDelete(DeleteBehavior.SetNull);
+
+        // Nullable: vinculada a un reporte de inspección (PhotoType=Inspection)
+        builder.HasOne(p => p.InspectionReport)
+               .WithMany(r => r.Photos)
+               .HasForeignKey(p => p.InspectionReportId)
+               .OnDelete(DeleteBehavior.SetNull)
+               .IsRequired(false);
     }
 }

@@ -6,6 +6,10 @@
 
 **Changelog**:
 - **v1.1** (2026-05-06): Alineación con código real (sin estado `Approved`, snapshots en `WorkOrderService`). Nueva entidad `Mechanic` y flujo de asignación/aceptación/finalización de servicios por mecánicos. Notas obligatorias al finalizar.
+- **v1.2** (2026-05-23): Aclaraciones de cliente/mecánico:
+  - Stock NO maneja precios — es intermediario de disponibilidad. El precio se carga en la cotización (info externa del taller).
+  - Calendario de turnos: una patente ocupa el rectángulo del área durante TODOS los días que dura el trabajo (ej. motor 30 días = misma patente en la celda de motor durante 30 días).
+  - Servicios NO son catálogo fijo de precio — la mano de obra la define el mecánico por trabajo (no es lo mismo tren delantero de Peugeot que de Mercedes). El mecánico manda costo de mano de obra junto con su inspección.
 
 ---
 
@@ -2030,3 +2034,730 @@ Verificar que global query filters están aplicados en todas las entidades.
 ---
 
 **Fin de Especificación v1.0**
+
+
+Una vez que se hace el informe de la recepcion (orden) y al ser la primera vez no hay un diagnostico general, entonces cada mecanico del area que le corresponde a cada uno, fijarse si el auto tiene algo que le corresponde a su area, si tiene algo el mecanico hace un detalle de lo que encuentra en su area. Ese detalle debe ser muy especidifico en palabras por el propioo mecanico para que en otra instancia eso sirva para hacer una cotizacion sin que el cliente tenga que volver a traer el vehiculo innecesariamente. Todo ese informe inicial del mecanico, por ej llega un auto con problemas en el tren delantero, buueno, todos hacen un informe incluido el de tren delantero pero la oficina es que el que filtra de todos los informes de todas las areas, y se fijara en el motivo por el cual vino el auto al taller (eso ya se incluye). Lo filtra y lo desarrolla, busca el codigo de los repuestos, precios, precios del servicio de mano de obra, y se le manda al cliente
+
+Eso logra que ya se genere un informe inicial del auto, y la proxima vez que venga el taller ya le da un TURNO porque ya saben lo que tiene el auto, que auto es y que tenia. Le pueden dar un turno cuando ya tenga los repuestos, capacidad o lo que sea.
+
+=== INTEGRACION CON STOCK DE REPUESTOS ===
+
+La responsabilidad principal de este sistema es capturar la necesidad de repuestos, enviarla a validar y hacer el seguimiento del estado.
+
+1. Datos necesarios en el flujo
+Cada presupuesto debe permitir que se cargue, por cada ítem, el código del proveedor (o código de repuesto) y la cantidad requerida.
+
+El presupuesto debe estar asociado a una identificación única del vehículo (la patente).
+
+2. Eventos y Lógica del Sistema
+Al aprobarse un presupuesto: 1. El sistema debe tomar de forma automática todos los códigos de repuestos cargados en ese presupuesto junto con sus cantidades y la patente del auto.
+2. Debe enviar estos datos al Sistema de Stock para consultar la disponibilidad.
+3. Al recibir la respuesta del Sistema de Stock (que le dirá qué hay y qué falta), el Sistema de Taller debe registrar internamente este pedido asociado a la patente, guardando el estado inicial que le devolvió el depósito.
+
+Actualización de estados:
+
+El sistema debe quedar escuchando o permitir consultar los cambios de estado que haga el depósito (si los repuestos ya se compraron, si están en camino o si ya se le entregaron al mecánico).
+
+3. Cambios en la Experiencia de Usuario (Oficina)
+Botonera: Agregar la acción de "Aprobar Presupuesto" que dispara todo el proceso anterior.
+
+---
+
+## ESTADO ACTUAL DE IMPLEMENTACIÓN — Integración con Stock (GestionPGB)
+
+> Sección de trabajo en pausa. A revisar con el cliente antes de continuar.
+
+---
+
+### Objetivo
+
+Cuando se aprueba un presupuesto en el taller, los repuestos que el mecánico necesita deben
+pedirse automáticamente al depósito (GestionPGB). El taller tiene que poder ver en tiempo real
+si los repuestos están disponibles, en camino, o si hay faltantes — sin tener que llamar por
+teléfono al depósito.
+
+---
+
+### Lo que tenemos hoy (implementado y funcionando)
+
+#### Backend — MyCar
+
+**Dominio**
+- Entidad `PartsStockRequest`: representa un pedido al depósito, asociado a una WO.
+  Campos: `WorkOrderId`, `LicensePlateSnapshot`, `ExternalReference` (ID del pedido en GestionPGB),
+  `Status`, `Items`.
+- Entidad `PartsStockRequestItem`: un ítem del pedido. Campos: `ProductCode`, `Name`,
+  `Quantity`, `Status`, `Notes`.
+- Enum `StockRequestStatus`: `PendingReview`, `HasShortages`, `InProgress`, `Ready`.
+- Enum `StockRequestItemStatus`: `PendingReview`, `Available`, `Missing`, `InTransit`, `Delivered`.
+- Lógica `RecomputeStatus()`: calcula el estado agregado del pedido a partir del estado de sus ítems.
+
+**Persistencia**
+- Migración `AddPartsStockRequests` aplicada. Tablas `PartsStockRequests` y
+  `PartsStockRequestItems` creadas en PostgreSQL.
+- Repositorio `IPartsStockRequestRepository` con métodos de lectura filtrada, detalle y
+  búsqueda de ítems individuales.
+
+**Integración con GestionPGB**
+- Interfaz `IStockService` con método `SubmitRequestAsync`.
+- `HttpStockService`: implementación real que llama a `POST /api/workshop-orders` en GestionPGB
+  con autenticación `X-Api-Key`. Mapea las respuestas de GestionPGB (enums como strings) al
+  modelo interno de MyCar.
+- `StubStockService`: fallback que solo loguea — activo si `StockSystem:BaseUrl` no está
+  configurado.
+- Orquestador `StockRequestOrchestrator`: se dispara al aprobar un presupuesto. Es idempotente
+  (no crea pedido duplicado si ya existe). Si GestionPGB no responde, swallow del error —
+  la aprobación de la WO no se interrumpe. El pedido queda en `PendingReview` para reintento.
+
+**Endpoints API**
+- `GET /api/stock-requests` — listado con filtros por estado y patente (Admin/Receptionist).
+- `GET /api/stock-requests/{id}` — detalle con ítems.
+- `POST /api/stock-requests/items/{itemId}/status` — override manual de estado de un ítem.
+- `POST /api/stock-requests/{id}/retry-submission` — reintenta el envío a GestionPGB si el
+  pedido quedó sin `ExternalReference` por fallo en la llamada original.
+- `POST /api/stock-requests/callback` — endpoint que invoca GestionPGB cuando confirma entrega.
+  Valida `X-Api-Key` (máquina a máquina). Actualiza ítems y recomputa estado del pedido.
+
+**Disparo automático al aprobar**
+- Los tres handlers de aprobación (`ApproveAsCustomer`, `ApproveWorkOrder`,
+  `ChangeWorkOrderStatus`) llaman al orquestador. Sólo procesa partes con
+  `ApprovalStatus == Approved` y `ProductCode != null`.
+
+**Configuración** (`appsettings.Development.json`)
+```json
+"StockSystem": {
+  "BaseUrl": "http://localhost:5000",
+  "ApiKey": "dev-workshop-key-change-me-in-production-min-32-chars",
+  "CallbackApiKey": "dev-callback-key-change-me-in-production-min-32-chars",
+  "CallbackBaseUrl": "http://localhost:5216"
+}
+```
+
+#### Frontend — MyCar
+
+- Pantalla `/admin/stock` con:
+  - Chips de estado filtrable (Pendiente / Con faltantes / En camino / Listo) con conteos.
+  - Búsqueda por patente.
+  - Indicador de última actualización automática (cada 30 segundos).
+  - Lista de pedidos con borde de color por estado, resumen de ítems con íconos.
+  - Panel expandido por pedido: ítems con ícono + badge de estado + fecha.
+  - Override manual de estado por ítem (dropdown).
+  - Botón "Reintentar envío a GestionPGB" cuando el pedido no llegó al depósito.
+- Enlace en el menú lateral de admin.
+- Hook `useStockRequests` con refetch automático cada 30 segundos.
+
+#### GestionPGB (sistema de stock externo — código en `ProyectoGestionInventario`)
+
+- Corre en `http://localhost:5000`.
+- Recibe pedidos en `POST /api/workshop-orders` con `X-Api-Key`.
+- Responde con disponibilidad inmediata por ítem (Available, Shortage, NotFound, etc.).
+- Guarda un `callbackUrl` para notificar al taller cuando confirma la entrega final.
+- Usa enums como strings en JSON (`JsonStringEnumConverter`).
+
+---
+
+### Lo que queremos lograr (visión completa)
+
+0. **Buscador de productos del depósito en el presupuesto** *(prerequisito de todo lo demás)*:
+   Cuando la recepcionista agrega un repuesto al presupuesto, tiene que poder buscar por nombre
+   o código en el catálogo de GestionPGB y seleccionarlo. El código, nombre y precio del
+   depósito se cargan solos — sin tener que tipear nada de memoria.
+
+1. **Flujo automático de pedido**: Al aprobar un presupuesto, el pedido llega a GestionPGB sin
+   intervención manual. La oficina no tiene que llamar al depósito.
+
+2. **Seguimiento en tiempo real**: La pantalla `/admin/stock` muestra el estado actualizado de
+   cada repuesto. El mecánico sabe si puede arrancar a trabajar o si tiene que esperar.
+
+3. **Notificación de entrega automática**: Cuando el depósito entrega los repuestos al taller,
+   GestionPGB llama al callback de MyCar y los ítems pasan automáticamente a "Entregado al
+   mecánico". La oficina no tiene que actualizar nada manualmente.
+
+4. **Override manual como respaldo**: Si el depósito avisa por teléfono o WhatsApp antes de que
+   el sistema se actualice, la oficina puede cambiar el estado manualmente desde cada ítem.
+
+5. **Resiliencia**: Si GestionPGB está caído en el momento de la aprobación, el pedido queda
+   registrado en MyCar y se puede reenviar cuando el depósito vuelva a estar disponible.
+
+---
+
+### Lo que falta / pendiente
+
+#### 🚨 Bloqueante crítico — Buscador de productos del catálogo
+
+**El problema:** Hoy, para agregar un repuesto a un presupuesto, la recepcionista tiene que
+tipear manualmente el `ProductCode` (ej. `RRR-123`). En la práctica esto es imposible: nadie
+sabe de memoria los códigos de cientos de productos. Sin este buscador, la integración con
+GestionPGB no es usable en producción.
+
+**Lo que se necesita:**
+
+- [ ] **GestionPGB debe exponer un endpoint de búsqueda de productos**, por ejemplo:
+      `GET /api/products?q=filtro` que devuelva nombre, código (barcode), precio y stock
+      disponible. Sin este endpoint, MyCar no puede ofrecer el buscador.
+      *→ Requiere coordinación con el equipo/cliente de GestionPGB.*
+
+- [ ] **MyCar BE — endpoint proxy de productos**: `GET /api/catalog/stock-products?q=...`
+      que llame a GestionPGB y devuelva los resultados al frontend. Esto evita exponer
+      las credenciales de GestionPGB al navegador y permite cachear resultados.
+      ⚠️ **El response del proxy NO debe incluir precio** — solo `code`, `name` y
+      `stock` (disponibilidad). El precio del repuesto siempre lo escribe la oficina
+      al armar la cotización (info externa de proveedores). Decisión confirmada con
+      cliente 2026-05-23.
+
+- [ ] **MyCar FE — selector de producto en el formulario de presupuesto**: Cuando la
+      recepcionista agrega un repuesto al presupuesto, en lugar de un campo de texto libre
+      para el código, debe haber un buscador tipo autocomplete que consulte el catálogo de
+      GestionPGB. Al seleccionar un producto, se autocompletan: nombre, código, y precio
+      sugerido del depósito.
+
+**Flujo esperado:**
+```
+Recepcionista tipea "filtro de aceite" en el buscador de partes
+    → MyCar FE llama a GET /api/catalog/stock-products?q=filtro+de+aceite
+    → MyCar BE llama a GestionPGB GET /api/products?q=filtro+de+aceite
+    → GestionPGB devuelve lista de coincidencias con código y precio
+    → Recepcionista selecciona el producto correcto
+    → ProductCode, nombre y precio quedan cargados en el ítem del presupuesto
+```
+
+**Nota sobre repuestos sin código:** Los repuestos que el taller consigue por su cuenta
+(sin código de GestionPGB) deben seguir siendo posibles — el campo de código queda vacío
+y ese ítem no se envía al depósito al aprobar el presupuesto.
+
+---
+
+#### Técnico
+
+- [ ] **Prueba de integración end-to-end**: Aprobar un presupuesto con MyCar y GestionPGB
+      corriendo simultáneamente, verificar que el pedido llega y los estados se actualizan.
+      *Bloqueado: conflicto de puertos al correr ambos localmente. Solución: deployar
+      GestionPGB en Railway, o configurar puertos distintos.*
+
+- [ ] **Callback de entrega**: Verificar que cuando GestionPGB confirma la entrega, el callback
+      llega a MyCar y los ítems pasan a "Entregado". Requiere que MyCar BE sea accesible
+      públicamente (Railway) o que se use ngrok para testing local.
+
+- [ ] **Callbacks de estados intermedios**: GestionPGB actualmente solo llama al callback en la
+      entrega final. Los estados intermedios (Shortage → PurchasedInTransit) no se notifican
+      automáticamente — hay que pedirle al equipo de GestionPGB que agregue callbacks en esas
+      transiciones, o implementar polling periódico desde MyCar.
+
+- [ ] **Deployment en producción**: Definir si GestionPGB se deploya en Railway (recomendado)
+      y apuntar `StockSystem:BaseUrl` a la URL pública. El `CallbackBaseUrl` también debe ser
+      la URL pública de MyCar BE.
+
+- [ ] **Variables de entorno en producción**: Las API keys deben ser secretos reales, no los
+      valores de desarrollo actuales.
+
+#### Negocio / a hablar con el cliente
+
+- [ ] **¿Quién opera GestionPGB?** ¿Es un sistema interno del taller o lo opera un depósito
+      externo? Esto define quién tiene acceso y cómo se gestiona.
+
+- [ ] **Flujo de faltantes**: Cuando hay repuestos que faltan, ¿qué hace la oficina? ¿Espera
+      que el depósito los consiga? ¿Le avisa al cliente? ¿Puede aceptar una entrega parcial?
+
+- [ ] **Visibilidad del mecánico**: ¿El mecánico necesita ver en su panel si sus repuestos ya
+      llegaron, o alcanza con que la oficina lo gestione?
+
+- [ ] **Relación con la WO**: Cuando todos los repuestos están en estado "Entregado", ¿la WO
+      avanza de estado automáticamente (ej. pasa a InProgress)? ¿O la oficina lo hace manual?
+
+- [ ] **¿Qué pasa con repuestos custom?** Los repuestos sin `ProductCode` (que el taller
+      consigue por su cuenta) no se envían a GestionPGB. ¿Está bien? ¿Necesitan algún
+      seguimiento propio?
+
+- [ ] **Historial y auditoría**: ¿El cliente necesita ver un historial de pedidos pasados,
+      incluyendo los ya entregados? ¿O solo los activos?
+
+---
+
+### Notas técnicas para retomar
+
+- `ProductCode` en `WorkOrderPart` debe coincidir con el `Barcode` del producto en GestionPGB.
+  Producto de prueba disponible en GestionPGB: `RRR-123`.
+- El orquestador es idempotente: si ya existe un `PartsStockRequest` para una WO, no crea otro.
+  Para reenviar un pedido huérfano (sin `ExternalReference`), usar el endpoint
+  `POST /api/stock-requests/{id}/retry-submission` o el botón en `/admin/stock`.
+- Si se necesita resetear una prueba: borrar las filas de `PartsStockRequestItems` y
+  `PartsStockRequests` para el `WorkOrderId` en cuestión, luego usar "Reintentar envío".
+
+Pantalla de Seguimiento: Una nueva sección para las chicas de la oficina donde puedan ver un listado por patente. Ahí verán si el pedido de repuestos está: Pendiente de revisión en depósito, Con faltantes para comprar, Comprado/En viaje o Listo/Entregado. Esto les permite coordinar el turno con el cliente.
+
+---
+
+## ESTADO ACTUAL DE IMPLEMENTACIÓN — Turnos y Disponibilidad del Taller
+
+> Sección de trabajo en pausa. A definir con el cliente antes de diseñar.
+
+---
+
+### Objetivo
+
+Que la oficina pueda saber en todo momento cuándo tiene lugar para recibir un auto, y que
+el cliente sepa exactamente cuándo traerlo. Hoy esa coordinación se hace por teléfono y
+se pierde información — el sistema tiene que ser la única fuente de verdad para saber
+qué días están ocupados, cuándo están listos los repuestos y cuándo le conviene al taller
+recibir ese auto.
+
+---
+
+### Lo que hay hoy
+
+Nada implementado. Solo dos menciones en la especificación original:
+
+- *"La próxima vez que venga al taller ya le da un TURNO porque ya saben lo que tiene el
+  auto... Le pueden dar un turno cuando ya tenga los repuestos, capacidad o lo que sea."*
+- *"Esto les permite coordinar el turno con el cliente."*
+
+El concepto está mencionado pero no diseñado.
+
+---
+
+### Lo que queremos lograr
+
+1. **La oficina ve un calendario de disponibilidad**: qué días tienen lugar libre, cuántos
+   autos pueden recibir por día, y qué días ya están completos.
+
+2. **La oficina crea un turno para un cliente**: selecciona el día, el cliente y el auto,
+   y el sistema registra que ese lugar está tomado.
+
+3. **El cliente recibe una confirmación**: por email o desde su portal, sabe el día y
+   hora acordados para traer el auto.
+
+4. **El turno está conectado al historial del auto**: si el auto ya estuvo en el taller,
+   la oficina ve qué trabajo se le hizo antes, qué se diagnosticó y si hay repuestos ya
+   pedidos — todo antes de que el auto llegue.
+
+5. **El turno considera si los repuestos están listos**: el sistema avisa si el auto
+   tiene repuestos pedidos al depósito que todavía no llegaron, para no darle turno
+   antes de tiempo.
+
+---
+
+### Propuesta de visualización — calendario por área de mecánico
+
+La capacidad del taller no es un número único: es **capacidad por área**. Si todos los
+mecánicos están ocupados con motor, el taller puede hacer 6 motores pero 0 frenos. La
+vista debe reflejar eso.
+
+**Boceto del calendario (vista por día):**
+
+```
+┌─────┬────────────────────────┬──────────────────────────────────┬──────────────┐
+│     │ Servicio + Mecánico    │ Vehículos asignados              │ Capacidad    │
+├─────┼────────────────────────┼──────────────────────────────────┼──────────────┤
+│     │ Tren delantero (Juan)  │ GHK123 │ MPC101 │ KOQ27B         │ 3 vehículos  │
+│ Día │ Frenos (Carlos)        │ ADO38KF                          │ 1 vehículo   │
+│  1  │ Motor (Luis)           │ AH301PL │ AEF01MR                │ 2 vehículos  │
+│     │ ...                    │ ...                              │              │
+├─────┼────────────────────────┼──────────────────────────────────┼──────────────┤
+│ Día │                                                                          │
+│  2  │                                                                          │
+└─────┴──────────────────────────────────────────────────────────────────────────┘
+```
+
+**Qué resuelve esta vista:**
+
+- **Refleja la realidad del taller**: no se ven slots abstractos, se ve qué auto está
+  en qué área con qué mecánico.
+- **Detecta cuellos de botella al vistazo**: si frenos tiene 5 autos y motor tiene 0,
+  se ve sin pensar.
+- **Las patentes visibles** permiten reconocer al instante de qué auto se habla.
+- **Escala sin romper el layout**: agregar áreas nuevas (electricidad, suspensión)
+  es agregar filas, no rediseñar.
+- **Colores por área** ayudan a escanear: cada servicio con su color, la oficina
+  aprende a leer la pantalla sin esfuerzo.
+
+**Preguntas adicionales que esta vista abre:**
+
+- [ ] **¿Qué pasa con un auto que necesita varios servicios?** Por ejemplo GHK123
+      entra para tren delantero **y** frenos. ¿Aparece en las dos filas, o se asigna
+      a la "principal" y el resto se trabaja en otro día?
+- [ ] **¿Qué pasa con autos que tardan más de un día?** Si el motor lleva 3 días,
+      ¿el auto aparece en motor del día 1, día 2 y día 3? ¿O solo el día que entra?
+- [ ] **¿La capacidad por área varía por día?** Si el mecánico de frenos se toma
+      vacaciones, ¿ese día la capacidad de frenos es 0?
+- [ ] **¿Cómo se diferencia un turno confirmado de uno tentativo?** ¿Color más claro,
+      ícono, opacidad?
+- [ ] **¿Se ven los espacios libres?** Si el día tiene capacidad para 4 trenes
+      delanteros y hay 3 patentes, ¿hay un slot vacío clickeable para asignar al
+      próximo cliente?
+
+---
+
+### Preguntas abiertas — a definir con el cliente
+
+Estas preguntas definen completamente cómo se construye el sistema. Sin respuesta,
+no se puede diseñar nada.
+
+- [ ] **¿Cuántos autos puede atender el taller al mismo tiempo?**
+      ¿Hay un límite físico (fosos, bahías, mecánicos) que define cuántos autos pueden
+      estar adentro trabajándose a la vez? ¿Ese número es fijo o cambia?
+
+- [ ] **¿El turno lo da siempre la oficina, o el cliente puede pedirlo solo?**
+      ¿El cliente llama por teléfono y la chica de la oficina lo carga en el sistema?
+      ¿O el cliente puede entrar al portal y pedir un turno él mismo?
+
+- [ ] **¿El turno tiene hora, o solo día?**
+      ¿"Traelo el martes a las 10" o simplemente "traelo el martes"?
+
+- [ ] **¿Qué pasa cuando un cliente llama por primera vez?**
+      ¿Se le da un turno antes de que llegue, o primero tiene que aparecer para que
+      la oficina registre el ingreso del auto?
+
+- [ ] **¿Qué pasa cuando el cliente ya tiene el presupuesto aprobado y hay que
+      coordinar cuándo traer el auto para hacer el trabajo?**
+      ¿Eso es un turno nuevo, o es una confirmación dentro del mismo ingreso que ya existe?
+
+- [ ] **¿El taller tiene días y horarios fijos de atención?**
+      ¿Lunes a viernes de 8 a 18? ¿Sábados? ¿Hay feriados u otros días en que
+      el taller no atiende aunque quiera?
+
+- [ ] **¿Qué pasa si el cliente no aparece en el día del turno?**
+      ¿Se cancela solo? ¿La oficina lo reagenda? ¿Se le manda un recordatorio antes?
+
+---
+
+### Lo que falta (una vez resueltas las preguntas)
+
+- [ ] Diseño del modelo de datos: Turno, configuración de capacidad del taller,
+      horarios de atención.
+- [ ] Pantalla de calendario para la oficina: vista semanal/mensual con disponibilidad.
+- [ ] Creación de turno desde la oficina: buscar cliente, seleccionar auto y fecha.
+- [ ] Notificación al cliente cuando se confirma el turno.
+- [ ] Recordatorio automático al cliente un día antes.
+- [ ] Vista del cliente: "mis turnos" en el portal.
+- [ ] Bloqueo automático de días cuando se alcanza la capacidad máxima.
+- [ ] Conexión con el estado de los repuestos: el sistema avisa si los repuestos
+      del auto todavía no llegaron al darle turno.
+- [ ] Configuración por área: cantidad de mecánicos / capacidad por servicio,
+      días de vacaciones o ausencias.
+- [ ] Soporte para autos que ocupan varios días: el turno bloquea el slot del
+      mecánico durante toda la duración estimada del trabajo.
+
+---
+
+## 📋 RESUMEN CONSOLIDADO DE PENDIENTES
+
+> Lista única de todo lo que está en pausa o por mejorar. Ordenado por urgencia.
+
+---
+
+### 🔴 Urgente (bugs visibles para el usuario hoy)
+
+| # | Tema | Qué hay que hacer | Archivo / Pantalla |
+|---|------|-------------------|--------------------|
+| 1 | **Filtro "Inactivos" de Mecánicos no funciona** | El FE manda `isActive`, el BE espera `includeInactive`. Unificar el contrato. | `mechanics/page.tsx` ↔ `MechanicsController.cs` |
+| 2 | **Filtro "Particular/Flota" de Clientes rompe la paginación** | Mover el filtro al BE. Hoy se aplica client-side sobre la página actual. | `customers/page.tsx` ↔ `CustomersController.cs` |
+| 3 | **Búsqueda de servicios no funciona** | El FE manda `search`, el BE lo descarta. Agregar búsqueda real por nombre. | `services/page.tsx` ↔ `CatalogServicesController.cs` |
+
+---
+
+### 🟡 Importante antes de producción
+
+| # | Tema | Por qué | Acción |
+|---|------|---------|--------|
+| 4 | **CORS hardcodeado a localhost:3000** | El frontend de producción no va a funcionar. | Leer origen desde `appsettings.Production.json`. |
+| 5 | **Contraseña del admin impresa en el log** | Queda en texto plano en disco hasta 30 días. | Quitar el log o mover la contraseña a configuración. |
+| 6 | **Soft-delete manual en los handlers** | Inconsistencia con el resto del proyecto que usa el mecanismo centralizado. | Mover el soft-delete al dominio o al repositorio. |
+| 7 | **Paginación faltante en Fleets** | El FE manda paginación pero el BE devuelve toda la tabla. | Implementar paginación real en el repositorio. |
+| 8 | **Posible N+1 en Vehicles** | Si Mapster accede por navegación, es una query por fila. | Verificar el profile de Mapster o agregar `Include(Customer/Fleet)`. |
+
+---
+
+### 🟢 Mejoras de arquitectura / limpieza
+
+| # | Tema | Por qué |
+|---|------|---------|
+| 9 | **Dead code: `MaintenanceAlert` y `DeclaredServiceHistory`** | Tienen dominio, configuración y migración pero no hay ningún feature construido. Decidir: construir o eliminar. |
+| 10 | **`Mechanic.Specialty` marcado como DEPRECATED** | La columna sigue viva. Planificar drop en próxima migración. |
+| 11 | **Over-fetching en handlers de WorkOrder** | Casi todos cargan el grafo completo cuando solo necesitan una parte. |
+| 12 | **Validators de FluentValidation en capa Data** | Dead code funcional — nunca se invocan. Eliminarlos o mover los útiles a Application. |
+
+---
+
+### 🔵 Features en pausa — a definir con el cliente
+
+#### A. Integración con Stock (GestionPGB)
+
+**Estado:** Implementación base lista, no usable en producción sin el catálogo de productos.
+
+**Bloqueante crítico:**
+- [ ] **Buscador de productos del catálogo de GestionPGB**: hoy la recepcionista
+      tendría que tipear el código de producto de memoria. Requiere que GestionPGB
+      exponga un endpoint `GET /api/products?q=...` y que MyCar haga un proxy.
+
+**Técnico:**
+- [ ] Prueba end-to-end con ambos sistemas corriendo (bloqueado por puertos locales).
+- [ ] Callback de entrega validado (requiere URL pública de MyCar BE).
+- [ ] Callbacks de estados intermedios (GestionPGB solo notifica delivery final).
+- [ ] Deployment en producción (definir si GestionPGB va a Railway).
+- [ ] Paginación en `/api/stock-requests` + bajar polling de 30s.
+
+**Negocio:**
+- [ ] ¿Quién opera GestionPGB?
+- [ ] Flujo de faltantes: ¿qué hace la oficina, qué se le dice al cliente?
+- [ ] Visibilidad del mecánico: ¿el mecánico ve si sus repuestos llegaron?
+- [ ] ¿La WO avanza automáticamente cuando todos los repuestos están entregados?
+- [ ] Repuestos custom (sin código): ¿necesitan algún seguimiento?
+- [ ] Historial de pedidos pasados: ¿se muestran o solo los activos?
+
+#### B. Turnos y Disponibilidad del Taller
+
+**Estado:** No diseñado. Boceto de UI conceptual aprobado (calendario por área).
+
+**Preguntas de negocio (bloquean el diseño):**
+- [ ] ¿Capacidad por taller, por área o por mecánico individual?
+- [ ] ¿Quién crea el turno: la oficina, el cliente, o ambos?
+- [ ] ¿Turno con hora o solo día?
+- [ ] ¿Cliente nuevo recibe turno antes de aparecer, o primero llega?
+- [ ] ¿Coordinación post-aprobación es un turno nuevo o sigue el mismo ingreso?
+- [ ] ¿Horarios y días de atención del taller?
+- [ ] ¿Qué pasa si el cliente no aparece?
+- [ ] ¿Auto que necesita varios servicios: una fila o varias?
+- [ ] ¿Auto que tarda varios días: ocupa el slot en cada día?
+- [ ] ¿Capacidad por área varía día a día (vacaciones, ausencias)?
+- [ ] ¿Cómo se diferencia turno confirmado vs tentativo?
+- [ ] ¿Se ven los espacios libres en el calendario?
+
+**Técnico (cuando se resuelvan las preguntas):**
+- [ ] Modelo de datos: Turno, configuración de capacidad, horarios.
+- [ ] Pantalla de calendario por día/área para la oficina.
+- [ ] Creación de turno + notificación al cliente.
+- [ ] Recordatorio automático un día antes.
+- [ ] Vista "mis turnos" en el portal del cliente.
+- [ ] Conexión con stock: bloquear turno si los repuestos no llegaron.
+
+---
+
+## 📌 ACLARACIONES DEL CLIENTE / MECÁNICO — 2026-05-23
+
+> Decisiones tomadas tras conversación con el cliente y el mecánico. Cierran preguntas
+> que estaban abiertas en las tres áreas más sensibles del producto.
+
+---
+
+### 1. Stock e integración con depósito: NO maneja precios
+
+**Decisión:**
+El sistema de stock (GestionPGB) **no maneja precios**. Es un intermediario que solo
+responde **si hay o no hay** un repuesto en el depósito propio del taller. El taller
+(admin) lo consulta por nombre, código o lo que sea, para saber disponibilidad.
+
+**Quién pone el precio:**
+- El precio del repuesto lo carga **el empleado/recepcionista en el momento de armar
+  la cotización**, porque esa información la obtienen de un sistema externo (proveedores)
+  que NO es GestionPGB.
+- Si el repuesto no está disponible en el depósito propio, el empleado consulta a
+  proveedores externos (precio + disponibilidad) y ese precio lo escribe a mano en
+  el ítem del presupuesto.
+
+**Impacto en el diseño actual:**
+- [ ] El buscador de productos del catálogo de GestionPGB (sección "Bloqueante crítico")
+      debe traer **nombre + código + stock disponible**, pero **NO precio** del depósito.
+      El campo "precio sugerido del depósito" sale del flujo esperado.
+- [ ] El campo de precio en el ítem del presupuesto **siempre es editable manualmente**
+      por el empleado, tanto si el repuesto vino del catálogo como si lo agregó a mano.
+- [ ] El catálogo de GestionPGB sirve para **autocompletar nombre y código** y para
+      saber si hay stock — no para sugerir precio.
+- [ ] El `PriceSnapshot` de `WorkOrderService` / `WorkOrderPart` se llena con el valor
+      que escribió el empleado, no con un valor traído del depósito.
+
+**Reformulación del flujo:**
+```
+Recepcionista arma cotización
+  → Busca repuesto en GestionPGB (nombre/código) → obtiene CÓDIGO + DISPONIBILIDAD
+  → Si está disponible en depósito propio: marca el ítem, escribe precio manualmente
+  → Si no está disponible: consulta sistema externo de proveedores (fuera del scope)
+                            y escribe nombre + código + precio manualmente
+  → Mano de obra: ver punto 3 (la define el mecánico)
+```
+
+---
+
+### 2. Calendario de turnos: una patente ocupa la celda toda la duración del trabajo
+
+**Decisión:**
+La tabla/calendario por área de mecánico funciona así:
+> **Si un vehículo va a estar 30 días con el motor, esa patente aparece en el
+> rectángulo de "Motor" durante los 30 días completos.**
+
+No es "el día que entra" ni "el día que termina" — es **cada día que el auto está
+ocupando ese mecánico/área**.
+
+**Esto cierra dos preguntas abiertas de la sección Turnos:**
+- ~~"¿Qué pasa con autos que tardan más de un día? Si el motor lleva 3 días, ¿el auto
+  aparece en motor del día 1, día 2 y día 3?"~~ → **Sí, aparece los 3 días.**
+- ~~"¿Auto que tarda varios días: ocupa el slot en cada día?"~~ → **Sí.**
+
+**Lo que sigue abierto:**
+- [ ] **Auto con varios servicios simultáneos** (ej. tren delantero Y frenos al mismo
+      tiempo): ¿aparece en las dos filas en simultáneo? Pregunta vigente.
+- [ ] **¿Cómo se calcula la duración del trabajo?** El mecánico tiene que estimar
+      cuántos días le va a llevar (ver punto 3 — el mecánico es el que sabe). Esa
+      estimación es la que bloquea los días en el calendario.
+- [ ] **¿Qué pasa si el trabajo se extiende más de lo estimado?** ¿El sistema corre
+      automáticamente la ocupación o la oficina la extiende a mano?
+
+**Implicancia en el modelo de datos:**
+- La asignación de un servicio al mecánico necesita **fecha inicio + fecha fin estimada**
+  (o duración en días). El calendario lee ese rango para pintar cada día.
+- Si la fecha fin se mueve, el calendario refleja automáticamente la nueva ocupación.
+
+---
+
+### 3. Servicios y mano de obra: el mecánico cotiza, no es catálogo fijo
+
+**Decisión:**
+> No es lo mismo arreglar un tren delantero de Peugeot que un Mercedes. El mecánico
+> informa lo que tiene. Para armar el presupuesto **el mecánico tiene que mandar,
+> junto con su inspección, cuánto costará el trabajo, porque nadie sabe eso más que él.
+> Su mano de obra.**
+
+Esto choca con la entidad `CatalogService` actual, que tiene un `price` fijo. La
+realidad es: el **nombre del servicio** puede estar catalogado ("Tren delantero",
+"Cambio de embrague"), pero el **precio de mano de obra se define caso por caso**
+según el auto y lo que encontró el mecánico.
+
+**Impacto en el modelo:**
+- [ ] El `price` de `CatalogService` deja de ser fuente de verdad. Pasa a ser, como
+      mucho, un **precio orientativo / histórico** o se elimina.
+- [ ] El `PriceSnapshot` de `WorkOrderService` siempre se llena con el valor que
+      **el mecánico cotizó para ese auto puntual**, no con el del catálogo.
+- [ ] El catálogo de servicios pasa a ser una lista de **nombres** + descripción
+      estándar, no de precios.
+
+**Impacto en el flujo (lo que cambia respecto al spec original):**
+
+Hoy el spec dice:
+```
+2. El mecánico inicia el diagnóstico → admin agrega servicios del catálogo →
+   3. admin cambia a "Esperando aprobación" → se envía presupuesto
+```
+
+Con esta aclaración, el flujo real es:
+```
+1. Auto entra (Received).
+2. Admin pasa a Diagnosing.
+3. CADA MECÁNICO DE CADA ÁREA hace su informe de lo que encuentra en su área
+   (ya estaba mencionado al final del spec, líneas 2034-2037).
+4. Junto con el informe, el mecánico responsable carga:
+     - Servicios necesarios (nombres del catálogo o texto libre)
+     - Costo de mano de obra por servicio (lo decide él)
+     - Repuestos necesarios (con código de GestionPGB cuando aplica)
+     - Estimación de días de trabajo (para reservar slot en el calendario)
+5. La oficina/admin RECIBE esos informes, los CONSOLIDA en un presupuesto:
+     - Filtra cuáles ítems van al cliente según el motivo de ingreso
+     - Agrega precios de repuestos (manual, fuente externa — ver punto 1)
+     - El precio de mano de obra ya viene del mecánico
+6. Admin pasa a AwaitingApproval → se envía presupuesto al cliente.
+```
+
+**Endpoints / capacidades que faltan en el modelo actual:**
+- [ ] **El mecánico necesita poder cargar `PriceSnapshot` y `EstimatedDays`** al
+      reportar su inspección, no solo finalizar el trabajo. Hoy el mecánico solo
+      tiene `accept` y `complete` con notas. Falta una acción tipo
+      `submit-inspection` o `submit-quote` previa.
+- [ ] **Estructura para "informe inicial por área"**: cada mecánico que revisa el
+      auto deja un informe, no solo el del área del motivo de ingreso. Hoy el
+      modelo asume que ya existen `WorkOrderService` cuando el mecánico interviene
+      (los crea el admin). Tiene que invertirse: el mecánico propone, el admin
+      decide qué entra al presupuesto.
+- [ ] **Workflow de "borrador de presupuesto"**: necesitamos un estado intermedio
+      donde los informes de los mecánicos están cargados pero el admin todavía no
+      armó el presupuesto final. Hoy no existe.
+
+**Preguntas que abre y faltan resolver:**
+- [ ] ¿El catálogo de servicios se mantiene como **nombre + descripción** (sin precio)
+      o se elimina y se reemplaza por texto libre?
+- [ ] ¿Cómo se modela el "informe del mecánico por área" antes de que exista
+      `WorkOrderService`? ¿Una nueva entidad `WorkOrderInspectionReport`?
+- [ ] ¿Cada mecánico recibe automáticamente la orden en estado Diagnosing para
+      hacer su informe, o el admin decide qué áreas/mecánicos miran cada auto?
+- [ ] ¿Qué pasa si después de aprobado el presupuesto, el mecánico al desarmar
+      encuentra más trabajo (y más mano de obra)? ¿Se vuelve a cotizar? ¿Hay un
+      flujo de "ampliación de presupuesto"?
+
+---
+
+### Resumen de cambios al modelo (para próxima iteración)
+
+| Área | Cambio | Entidades afectadas |
+|------|--------|---------------------|
+| Stock | El catálogo de GestionPGB devuelve disponibilidad, NO precio | `WorkOrderPart.PriceSnapshot` se carga manual |
+| Catálogo | `CatalogService.Price` deja de ser fuente de verdad (o se elimina) | `CatalogService`, `WorkOrderService` |
+| Inspección | El mecánico cotiza mano de obra + estima días en su informe | Nueva entidad o extensión de `WorkOrderService` |
+| Calendario | Asignación de servicio necesita rango de fechas (no un día) | `WorkOrderService` (agregar `ScheduledStart`, `ScheduledEnd` o `EstimatedDays`) |
+| Workflow | Estado intermedio: "informes cargados, presupuesto en armado" | `WorkOrderStatus` (posible nuevo valor) |
+
+
+==== IMPLEMENTACION PARA SUMINSTRAR INFO A LOS CLIENTES DE SUS VEHICULOS ===
+
+Resulta que las cubiertas de los vehiculos se desgastan. Esto se mide segun la cubierta. Pero cuando llega al 50% de altura, digamosle 5mm, ya es una señal de que se deben cambiar las cubiertas. Mi cliente quiere que el Software proporcione una estimacion por los datos que proporciona el cliente km, fecha de vencimiento de las cubiertas y la medida actual cuando llega al taller la cubierta. No se bien como encarar esto. Proporciono informacion en la web:
+
+Inserta el sensor del medidor en el centro de las ranuras principales de la banda de rodamiento.
+Toma varias medidas en diferentes puntos (interior, centro y exterior) para detectar desgastes irregulares.
+Si el promedio de las mediciones es inferior a 3 mm, planifica el cambio de inmediato; si es inferior a 1,6 mm, el cambio es urgente
+
+ Es un problema interesante porque tiene dos partes: modelo de datos (qué guardamos) y cálculo de estimación (cómo proyectamos el desgaste). Te paso cómo lo encararía.
+
+Cómo lo modelo
+Cada cubierta es una entidad propia (no un campo del vehículo), porque se reemplaza a lo largo de la vida del auto y mantener historial es clave para el cálculo.
+
+Vehicle
+  └─ VehicleTire (1 por posición: FL, FR, RL, RR, [Spare])
+       ├─ Marca, Modelo, Medida ("185/65 R15")
+       ├─ InstalledOn, InstalledAtKm
+       ├─ InitialTreadDepthMm (default 8mm)
+       ├─ ExpectedLifeKm (opcional, ej. 50.000)
+       ├─ IsActive (false cuando se reemplaza)
+       └─ VehicleTireMeasurement (N por cubierta)
+            ├─ MeasuredOn, VehicleMileageAtMeasurement
+            ├─ InnerDepthMm, CenterDepthMm, OuterDepthMm
+            └─ AverageDepthMm (computed)
+Por qué así:
+
+Cuando se cambia una cubierta, no perdés el historial — la vieja queda con IsActive=false + ReplacedOn. Si el cliente vuelve a preguntar "¿cuántos km me duró la anterior?", el dato sigue ahí.
+Las 3 mediciones por punto (interior/centro/exterior) detectan desgaste irregular — exactamente como dice la fuente que pasaste. Si la interior se desgasta más rápido que la exterior, el sistema avisa que probablemente hay un problema de alineación.
+Cómo calculo la estimación
+Es interpolación lineal sobre los km del auto. Dos modos según cuánta info tenemos:
+
+Modo 1 — Solo hay 1 medición (o ninguna):
+
+Tasa de desgaste = (Profundidad inicial − Profundidad actual) / (Km actual − Km al instalar)
+Km restantes a 3mm = (Profundidad actual − 3) / Tasa
+Km restantes a 1.6mm = (Profundidad actual − 1.6) / Tasa
+Modo 2 — Hay ≥2 mediciones:
+
+Regresión lineal sobre las últimas N mediciones (más preciso porque captura la tasa real de ese cliente, no la teórica).
+Estados visuales:
+
+Profundidad promedio	Estado	Color
+≥ 5mm	Saludable	🟢
+3 – 4.99mm	Atención	🟡
+1.6 – 2.99mm	Cambiar pronto	🟠
+< 1.6mm	URGENTE / ilegal	🔴
+Detección de desgaste irregular:
+Si en una medición la diferencia entre max(Inner, Center, Outer) y min(...) es > 2mm → flag "Desgaste irregular — revisar alineación/inflado".
+
+Quién hace qué
+Mecánico/Admin (en taller): mide y carga. Necesita un medidor de profundidad, el cliente no lo tiene.
+Cliente: solo ve el estado + las estimaciones. Lo que mueve la confianza: "te queda X km en las delanteras".
+Plan de sprint
+#	Tarea	Esfuerzo
+1	Entidades VehicleTire + VehicleTireMeasurement + enum TirePosition + migración	🟢
+2	Servicio de cálculo (tasa de desgaste + proyección + estado)	🟡
+3	Endpoints REST: CRUD cubiertas, agregar medición, GET con estimaciones	🟡
+4	FE admin: panel "Cubiertas" en detalle del vehículo (4 slots + botones medir/reemplazar)	🟡
+5	FE cliente: vista read-only en /my-vehicles/[id]	🟢
+
+#	Tareas
+#33	S10 — Dominio: VehicleTire + VehicleTireMeasurement — Enums TirePosition (FL/FR/RL/RR) + TireStatus. Entidades con todos los campos. Config EF. Migración + apply.	✅ YA HECHO	—
+#34	S10 — Application: cálculo + commands + queries — TireWearCalculator (tasa de desgaste mm/km, proyección a 3mm y 1.6mm, status, flag de desgaste irregular). Commands: CreateVehicleTire, AddTireMeasurement, ReplaceTire. Query: GetTiresByVehicle con estimaciones.	⏸️ Pendiente	#33
+#35	S10 — API: endpoints REST de cubiertas — GET /api/vehicles/{id}/tires, POST /api/vehicles/{id}/tires, POST /api/tires/{id}/measurements, POST /api/tires/{id}/replace. Autorización Admin + Receptionist + Mechanic.	⏸️ Pendiente	#34
+#36	S10 — FE Admin: panel de cubiertas en detalle del vehículo — Card con 4 slots posicionales (visual del auto desde arriba). Estado + última medición + km estimados por cubierta. Botones "+ Medir" y "Reemplazar".	⏸️ Pendiente	#35
+#37	S10 — FE Customer: vista read-only — En /my-vehicles/[id], card de solo lectura con estado de cubiertas + estimaciones + aviso de desgaste irregular.	⏸️ Pendiente	#35
+
+! RECOMENDACION: No hacer esfuerzo exhaustivo por el FE, es importante hacer una arquitectura, plan y desarrollo solido de la funcionalidad primero. Es la prioridad. Y estar con confianza de que no rompe el sistema.

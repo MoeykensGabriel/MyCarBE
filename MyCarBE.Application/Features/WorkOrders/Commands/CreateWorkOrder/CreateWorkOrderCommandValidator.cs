@@ -16,5 +16,10 @@ public class CreateWorkOrderCommandValidator : AbstractValidator<CreateWorkOrder
         When(x => !string.IsNullOrEmpty(x.CustomerNote), () =>
             RuleFor(x => x.CustomerNote)
                 .MaximumLength(1000).WithMessage("La nota del cliente no puede superar 1000 caracteres."));
+
+        // ServiceReason: obligatorio a partir de S3-14 — el wizard de intake siempre lo envía.
+        RuleFor(x => x.ServiceReason)
+            .NotEmpty().WithMessage("El motivo de visita es obligatorio.")
+            .MaximumLength(2000).WithMessage("El motivo de visita no puede superar 2000 caracteres.");
     }
 }

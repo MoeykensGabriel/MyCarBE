@@ -3,6 +3,7 @@ using MediatR;
 using MyCarBE.Application.Common.Exceptions;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Interfaces.Repositories;
+using MyCarBE.Application.Features.StockRequests.Services;
 using MyCarBE.Application.Features.WorkOrders.DTOs;
 using MyCarBE.Domain.Enums;
 
@@ -14,17 +15,20 @@ public class ApproveWorkOrderCommandHandler : IRequestHandler<ApproveWorkOrderCo
     private readonly IWorkOrderRepository              _workOrderRepository;
     private readonly IUnitOfWork                       _unitOfWork;
     private readonly IMapper                           _mapper;
+    private readonly IStockRequestOrchestrator         _stockRequestOrchestrator;
 
     public ApproveWorkOrderCommandHandler(
         IWorkOrderApprovalTokenRepository tokenRepository,
         IWorkOrderRepository              workOrderRepository,
         IUnitOfWork                       unitOfWork,
-        IMapper                           mapper)
+        IMapper                           mapper,
+        IStockRequestOrchestrator         stockRequestOrchestrator)
     {
-        _tokenRepository     = tokenRepository;
-        _workOrderRepository = workOrderRepository;
-        _unitOfWork          = unitOfWork;
-        _mapper              = mapper;
+        _tokenRepository          = tokenRepository;
+        _workOrderRepository      = workOrderRepository;
+        _unitOfWork               = unitOfWork;
+        _mapper                   = mapper;
+        _stockRequestOrchestrator = stockRequestOrchestrator;
     }
 
     public async Task<WorkOrderDetailDto> Handle(ApproveWorkOrderCommand request, CancellationToken cancellationToken)
@@ -35,17 +39,17 @@ public class ApproveWorkOrderCommandHandler : IRequestHandler<ApproveWorkOrderCo
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(approvalToken.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.WorkOrder), approvalToken.WorkOrderId);
 
-        if (workOrder.CurrentStatus != WorkOrderStatus.AwaitingApproval)
-            throw new BadRequestException(
-                $"La orden no está pendiente de aprobación. Estado actual: {workOrder.CurrentStatus}.");
-
-        // Use a system/anonymous user ID for the status change event
-        var systemUserId = Guid.Empty;
         try
         {
-            // El cliente aprueba → pasa a Approved (todavía no In Progress).
-            // El admin debe pasar manualmente a InProgress cuando el vehículo esté en el taller.
-            workOrder.ChangeStatus(WorkOrderStatus.Approved, systemUserId, "Aprobado por el cliente vía enlace.");
+            // Aplica decisión + valida grupos + recalcula total — todo en el dominio.
+            workOrder.ApplyCustomerApproval(request.ApprovedServiceIds, request.ApprovedPartIds);
+
+            // Transición de estado: AwaitingApproval → Approved.
+            // Usuario sistema porque la acción vino por token público (no hay UserId).
+            workOrder.ChangeStatus(
+                WorkOrderStatus.Approved,
+                Guid.Empty,
+                "Aprobado por el cliente vía enlace.");
         }
         catch (InvalidOperationException ex)
         {
@@ -54,6 +58,9 @@ public class ApproveWorkOrderCommandHandler : IRequestHandler<ApproveWorkOrderCo
 
         approvalToken.IsUsed = true;
         approvalToken.UsedAt = DateTime.UtcNow;
+
+        // Crear el pedido al depósito antes del SaveChanges, así todo se commitea junto.
+        await _stockRequestOrchestrator.EnsureStockRequestForApprovedWorkOrderAsync(workOrder, cancellationToken);
 
         _workOrderRepository.Update(workOrder);
         _tokenRepository.Update(approvalToken);

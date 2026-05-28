@@ -24,7 +24,14 @@ public record WorkOrderDetailDto(
     string?                            ContactPersonPhone,
     DateTime                           CreatedAt,
     DateTime                           UpdatedAt,
-    IReadOnlyList<WorkOrderServiceDto>      Services,
-    IReadOnlyList<WorkOrderPhotoDto>        Photos,
-    IReadOnlyList<WorkOrderStatusChangeDto> Timeline
+    IReadOnlyList<WorkOrderServiceDto>              Services,
+    IReadOnlyList<WorkOrderPartDto>                 Parts,
+    IReadOnlyList<WorkOrderPhotoDto>                Photos,
+    IReadOnlyList<WorkOrderStatusChangeDto>         Timeline,
+    /// <summary>
+    /// Vista liviana de los reportes de inspección de la orden (Id + área + mecánico).
+    /// Sirve al FE para emparejar fotos de inspección con fotos del servicio del mismo área.
+    /// Para detalle completo del reporte (findings, propuestas) usar el endpoint de InspectionReports.
+    /// </summary>
+    IReadOnlyList<WorkOrderInspectionReportLiteDto> InspectionReports
 );

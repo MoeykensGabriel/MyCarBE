@@ -20,10 +20,17 @@ public class MechanicRepository : Repository<Mechanic>, IMechanicRepository
 
     public async Task<Mechanic?> GetByApplicationUserIdAsync(Guid applicationUserId, CancellationToken cancellationToken = default)
         => await _context.Mechanics
+            .Include(m => m.Areas)
             .FirstOrDefaultAsync(m => m.ApplicationUserId == applicationUserId, cancellationToken);
+
+    public async Task<Mechanic?> GetByIdWithAreasAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _context.Mechanics
+            .Include(m => m.Areas)
+            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<Mechanic>> GetActiveAsync(CancellationToken cancellationToken = default)
         => await _context.Mechanics
+            .Include(m => m.Areas)
             .Where(m => m.IsActive)
             .OrderBy(m => m.LastName).ThenBy(m => m.FirstName)
             .ToListAsync(cancellationToken);
@@ -53,6 +60,7 @@ public class MechanicRepository : Repository<Mechanic>, IMechanicRepository
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
+            .Include(m => m.Areas)
             .OrderBy(m => m.LastName).ThenBy(m => m.FirstName)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

@@ -12,6 +12,10 @@ public class WorkOrderPhoto : BaseEntity
     public Guid? WorkOrderServiceId { get; set; }
     public WorkOrderService? WorkOrderService { get; set; }
 
+    // Nullable — vinculada a un reporte de inspección (cuando PhotoType=Inspection)
+    public Guid? InspectionReportId { get; set; }
+    public InspectionReport? InspectionReport { get; set; }
+
     public PhotoType PhotoType { get; set; }
     public string Url { get; set; } = string.Empty;
     public string? Caption { get; set; }

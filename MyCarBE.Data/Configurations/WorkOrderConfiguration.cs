@@ -14,6 +14,7 @@ public class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
         builder.Property(w => w.TotalAmount).HasColumnType("numeric(18,2)");
         builder.Property(w => w.CustomerNote).HasMaxLength(1000);
         builder.Property(w => w.TechnicianNote).HasMaxLength(1000);
+        builder.Property(w => w.ServiceReason).HasMaxLength(2000);
 
         // CustomerIdAtEntry, FleetIdAtEntry y CreatedByUserId se congelan al crear — nunca se modifican
         builder.Property(w => w.CustomerIdAtEntry).Metadata.SetAfterSaveBehavior(
@@ -24,6 +25,11 @@ public class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
             Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
 
         builder.HasIndex(w => w.CreatedByUserId);
+
+        // Para el TTL cleanup (S4-07): filtra órdenes vencidas en AwaitingApproval.
+        // Índice parcial para no inflar la tabla innecesariamente.
+        builder.HasIndex(w => w.QuoteExpiresAt)
+               .HasFilter("\"QuoteExpiresAt\" IS NOT NULL");
 
         builder.HasOne(w => w.Vehicle)
                .WithMany(v => v.WorkOrders)

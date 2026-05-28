@@ -20,7 +20,7 @@ public class GetMechanicByIdQueryHandler : IRequestHandler<GetMechanicByIdQuery,
 
     public async Task<MechanicDto> Handle(GetMechanicByIdQuery request, CancellationToken cancellationToken)
     {
-        var mechanic = await _repository.GetByIdAsync(request.Id, cancellationToken)
+        var mechanic = await _repository.GetByIdWithAreasAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(Mechanic), request.Id);
 
         return _mapper.Map<MechanicDto>(mechanic);

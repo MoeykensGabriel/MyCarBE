@@ -23,22 +23,34 @@ public class GetApprovalInfoQueryHandler : IRequestHandler<GetApprovalInfoQuery,
         var approvalToken = await _tokenRepository.GetByTokenValueAsync(request.Token, cancellationToken)
             ?? throw new NotFoundException("Approval token", request.Token);
 
-        // Cargamos con FullDetails para obtener Vehicle, CustomerAtEntry y FleetAtEntry en una sola query.
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(approvalToken.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.WorkOrder), approvalToken.WorkOrderId);
 
         var services = workOrder.Services
             .Where(s => !s.IsDeleted)
             .Select(s => new ApprovalServiceItemDto(
-                Id:          s.Id,
-                Name:        s.NameSnapshot,
-                Description: s.DescriptionSnapshot,
-                UnitPrice:   s.PriceSnapshot,
-                Quantity:    s.Quantity,
-                Subtotal:    s.PriceSnapshot * s.Quantity))
+                Id:                 s.Id,
+                Name:               s.NameSnapshot,
+                Description:        s.DescriptionSnapshot,
+                UnitPrice:          s.PriceSnapshot,
+                Quantity:           s.Quantity,
+                Subtotal:           s.PriceSnapshot * s.Quantity,
+                AlternativeGroupId: s.AlternativeGroupId))
             .ToList();
 
-        // Nombre del titular: si es flota, usamos la razón social; si es particular, nombre + apellido.
+        var parts = workOrder.Parts
+            .Where(p => !p.IsDeleted)
+            .Select(p => new ApprovalPartItemDto(
+                Id:                 p.Id,
+                Name:               p.Name,
+                ProductCode:        p.ProductCode,
+                UnitPrice:          p.UnitPrice,
+                Quantity:           p.Quantity,
+                Subtotal:           p.UnitPrice * p.Quantity,
+                Tier:               p.Tier,
+                AlternativeGroupId: p.AlternativeGroupId))
+            .ToList();
+
         var customerName =
             workOrder.FleetAtEntry?.CompanyName
             ?? (workOrder.CustomerAtEntry is not null
@@ -54,6 +66,7 @@ public class GetApprovalInfoQueryHandler : IRequestHandler<GetApprovalInfoQuery,
             CustomerName:        customerName,
             TotalAmount:         workOrder.TotalAmount,
             Services:            services,
+            Parts:               parts,
             ExpiresAt:           approvalToken.ExpiresAt,
             IsExpired:           !approvalToken.IsValid());
     }

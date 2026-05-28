@@ -55,6 +55,9 @@ builder.Services.AddScoped<IPdfService, QuotePdfService>();
 // Approval link builder — change ApprovalBaseUrl in appsettings for production/frontend
 builder.Services.AddScoped<IApprovalLinkBuilder, ApprovalLinkBuilder>();
 
+// Background: cancela órdenes con presupuesto vencido (corre cada hora).
+builder.Services.AddHostedService<QuoteExpirationCleanupService>();
+
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey   = jwtSettings["SecretKey"]!;

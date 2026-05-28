@@ -50,11 +50,34 @@ public static class DataLayerExtensions
         services.AddScoped<IDashboardRepository,             DashboardRepository>();
         services.AddScoped<IMechanicRepository,              MechanicRepository>();
         services.AddScoped<IReceptionistRepository,          ReceptionistRepository>();
+        services.AddScoped<IAreaRepository,                  AreaRepository>();
+        services.AddScoped<IInspectionReportRepository,      InspectionReportRepository>();
         services.AddScoped<IWorkshopSettingsRepository,      WorkshopSettingsRepository>();
+        services.AddScoped<IPartsStockRequestRepository,     PartsStockRequestRepository>();
+        services.AddScoped<IVehicleDocumentRepository,       VehicleDocumentRepository>();
+        services.AddScoped<IVehicleTripRepository,           VehicleTripRepository>();
+        services.AddScoped<IVehicleTireRepository,           VehicleTireRepository>();
 
         // Identity Services
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IIdentityService, IdentityService>();
+
+        // Sistema de Stock externo (GestionPGB).
+        // Si StockSystem:BaseUrl está configurado → HttpStockService (HTTP real a GestionPGB).
+        // Si no → StubStockService (fallback que solo loguea — útil sin el depósito corriendo).
+        var stockBaseUrl = configuration["StockSystem:BaseUrl"];
+        if (!string.IsNullOrWhiteSpace(stockBaseUrl))
+        {
+            services.AddHttpClient<IStockService, HttpStockService>(client =>
+            {
+                client.BaseAddress = new Uri(stockBaseUrl);
+                client.Timeout     = TimeSpan.FromSeconds(15);
+            });
+        }
+        else
+        {
+            services.AddScoped<IStockService, StubStockService>();
+        }
 
         // FluentValidation — registra todos los validators del assembly de Data
         services.AddValidatorsFromAssembly(typeof(DataLayerExtensions).Assembly);

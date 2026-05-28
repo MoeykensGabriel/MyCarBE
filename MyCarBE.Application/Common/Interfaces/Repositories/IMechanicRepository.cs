@@ -11,6 +11,9 @@ public interface IMechanicRepository : IRepository<Mechanic>
     /// <summary>Resuelve el Mechanic vinculado al ApplicationUser del JWT (sub claim).</summary>
     Task<Mechanic?> GetByApplicationUserIdAsync(Guid applicationUserId, CancellationToken cancellationToken = default);
 
+    /// <summary>Mechanic con sus Areas eager-loaded (para edición de asignación y listados).</summary>
+    Task<Mechanic?> GetByIdWithAreasAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Mechanic>> GetActiveAsync(CancellationToken cancellationToken = default);
 
     Task<PagedResult<Mechanic>> SearchPagedAsync(

@@ -29,7 +29,7 @@ public class GetMyProfileQueryHandler : IRequestHandler<GetMyProfileQuery, Mecha
         var mechanicId = _currentUser.MechanicId
             ?? throw new ForbiddenException("Solo los mecánicos pueden acceder a este recurso.");
 
-        var mechanic = await _repository.GetByIdAsync(mechanicId, cancellationToken)
+        var mechanic = await _repository.GetByIdWithAreasAsync(mechanicId, cancellationToken)
             ?? throw new NotFoundException(nameof(Mechanic), mechanicId);
 
         return _mapper.Map<MechanicDto>(mechanic);

@@ -28,5 +28,13 @@ public record WorkOrderServiceDto(
     DateTime? AcceptedAt,
     DateTime? CompletedAt,
     string? MechanicNotes,
-    string? MechanicFindings
+    string? MechanicFindings,
+
+    /// <summary>
+    /// Área del taller a la que pertenece este servicio (Motor, Frenos, etc.).
+    /// El FE lo usa para emparejar la foto "antes" (de la inspección del mismo área)
+    /// con la foto "después" (que sube el mecánico al cerrar el servicio).
+    /// </summary>
+    Guid?   AreaId,
+    string? AreaName
 );

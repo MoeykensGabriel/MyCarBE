@@ -1,0 +1,37 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using MyCarBE.Domain.Entities;
+using MyCarBE.Domain.Enums;
+
+namespace MyCarBE.Data.Configurations;
+
+public class PartsStockRequestConfiguration : IEntityTypeConfiguration<PartsStockRequest>
+{
+    public void Configure(EntityTypeBuilder<PartsStockRequest> builder)
+    {
+        builder.ToTable("PartsStockRequests");
+        builder.HasKey(r => r.Id);
+
+        builder.Property(r => r.LicensePlateSnapshot)
+               .IsRequired()
+               .HasMaxLength(20);
+
+        builder.Property(r => r.ExternalReference)
+               .HasMaxLength(100);
+
+        builder.Property(r => r.Status)
+               .HasConversion<int>()
+               .HasDefaultValue(StockRequestStatus.PendingReview);
+
+        builder.HasOne(r => r.WorkOrder)
+               .WithMany() // WorkOrder no necesita conocer sus stock requests para no inflar el modelo
+               .HasForeignKey(r => r.WorkOrderId)
+               .OnDelete(DeleteBehavior.Cascade);
+
+        // Una WO solo tiene un PartsStockRequest activo. Si en el futuro se permite re-aprobar,
+        // habrá que relajar esto — por ahora el orchestrator garantiza idempotencia.
+        builder.HasIndex(r => r.WorkOrderId).IsUnique();
+        builder.HasIndex(r => r.LicensePlateSnapshot);
+        builder.HasIndex(r => r.Status);
+    }
+}

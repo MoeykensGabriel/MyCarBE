@@ -16,4 +16,11 @@ public enum WorkOrderStatus
     /// Se agrega al final para no renumerar valores existentes en BD.
     /// </summary>
     Approved         = 7,
+
+    /// <summary>
+    /// Fase de inspección colectiva: mecánicos de cada área dejan su reporte sobre el vehículo.
+    /// Estado inicial para nuevas órdenes (reemplaza a 'Received' como punto de partida).
+    /// Cuando todas las áreas están cubiertas, el admin cierra la inspección y pasa a Diagnosing (cotización).
+    /// </summary>
+    UnderInspection  = 8,
 }

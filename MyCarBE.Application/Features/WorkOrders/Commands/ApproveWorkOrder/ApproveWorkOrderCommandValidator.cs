@@ -21,5 +21,16 @@ public class ApproveWorkOrderCommandValidator : AbstractValidator<ApproveWorkOrd
             .NotEmpty().WithMessage("El token de aprobación es obligatorio.")
             .MinimumLength(TokenMinLength).WithMessage("El link de aprobación no es válido.")
             .MaximumLength(TokenMaxLength).WithMessage("El link de aprobación no es válido.");
+
+        RuleFor(x => x.ApprovedServiceIds)
+            .NotNull().WithMessage("La lista de servicios aprobados es obligatoria (puede estar vacía).");
+
+        RuleFor(x => x.ApprovedPartIds)
+            .NotNull().WithMessage("La lista de repuestos aprobados es obligatoria (puede estar vacía).");
+
+        // Mínimo 1 entre las dos listas — la validación profunda de grupos vive en el dominio.
+        RuleFor(x => x)
+            .Must(x => (x.ApprovedServiceIds?.Count ?? 0) + (x.ApprovedPartIds?.Count ?? 0) > 0)
+            .WithMessage("Tenés que aprobar al menos un item del presupuesto.");
     }
 }

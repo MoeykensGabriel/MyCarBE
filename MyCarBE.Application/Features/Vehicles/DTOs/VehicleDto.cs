@@ -24,6 +24,11 @@ public record VehicleDto(
     // Ownership
     Guid?           CustomerId,
     Guid?           FleetId,
+    /// <summary>
+    /// Token público de la estación de viajes (QR del chofer). Solo poblado para vehículos
+    /// de flota. Para clientes particulares siempre null.
+    /// </summary>
+    string?         TripToken,
     DateTime        CreatedAt,
     DateTime        UpdatedAt
 );

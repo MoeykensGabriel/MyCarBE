@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MyCarBE.Application.Common.Exceptions;
 
 namespace MyCarBE.API.Middleware;
@@ -50,6 +51,19 @@ public class GlobalExceptionHandler : IExceptionHandler
                 {
                     Title  = "Conflict",
                     Detail = e.Message,
+                    Status = StatusCodes.Status409Conflict
+                }),
+
+            // Optimistic concurrency desde EF (xmin de Postgres). Por ejemplo,
+            // dos mecánicos clickeando "Tomar trabajo" al mismo tiempo: el segundo
+            // SaveChangesAsync tira esto. Se traduce a 409 con mensaje genérico
+            // (el FE puede refrescar la pantalla afectada al ver el código).
+            DbUpdateConcurrencyException => (
+                StatusCodes.Status409Conflict,
+                new ProblemDetails
+                {
+                    Title  = "Conflict",
+                    Detail = "Otro usuario modificó este recurso en simultáneo. Refrescá la pantalla y volvé a intentar.",
                     Status = StatusCodes.Status409Conflict
                 }),
 

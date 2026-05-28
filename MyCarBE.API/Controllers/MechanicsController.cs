@@ -2,12 +2,15 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyCarBE.Application.Common.Models;
+using MyCarBE.Application.Features.Mechanics.Commands.AssignAreasToMechanic;
 using MyCarBE.Application.Features.Mechanics.Commands.CreateMechanic;
 using MyCarBE.Application.Features.Mechanics.Commands.DeleteMechanic;
 using MyCarBE.Application.Features.Mechanics.Commands.UpdateMechanic;
 using MyCarBE.Application.Features.Mechanics.DTOs;
 using MyCarBE.Application.Features.Mechanics.Queries.GetAllMechanics;
 using MyCarBE.Application.Features.Mechanics.Queries.GetMechanicById;
+using MyCarBE.Application.Features.Mechanics.Queries.GetMyAvailableServices;
+using MyCarBE.Application.Features.Mechanics.Queries.GetMyPendingInspections;
 using MyCarBE.Application.Features.Mechanics.Queries.GetMyProfile;
 using MyCarBE.Application.Features.Mechanics.Queries.GetMyTasks;
 using MyCarBE.Domain.Enums;
@@ -83,6 +86,28 @@ public class MechanicsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Sincroniza las áreas de especialidad de un mecánico (PUT semantics: reemplazo total).
+    /// Pasar lista vacía deja al mecánico sin áreas asignadas.
+    /// </summary>
+    public record AssignAreasBody(IReadOnlyList<Guid> AreaIds);
+
+    [HttpPut("{id:guid}/areas")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(MechanicDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AssignAreas(
+        Guid id,
+        [FromBody] AssignAreasBody body,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new AssignAreasToMechanicCommand(id, body.AreaIds ?? Array.Empty<Guid>()),
+            cancellationToken);
+        return Ok(result);
+    }
+
     // ── Self-service (Mechanic) ──────────────────────────────────────────────
 
     [HttpGet("me")]
@@ -102,6 +127,34 @@ public class MechanicsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetMyTasksQuery(status), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Órdenes en fase de inspección con áreas pendientes que le corresponden al
+    /// mecánico logueado. Solo aparecen áreas activas (que el mecánico tiene asignadas)
+    /// y que aún no fueron reportadas o marcadas "sin hallazgos" en esa orden.
+    /// </summary>
+    [HttpGet("me/pending-inspections")]
+    [Authorize(Roles = "Mechanic")]
+    [ProducesResponseType(typeof(IReadOnlyList<PendingInspectionDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyPendingInspections(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetMyPendingInspectionsQuery(), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Pool de trabajos disponibles para auto-tomar: servicios Unassigned + Approved
+    /// de WOs en InProgress. El mecánico hace claim desde la pantalla "/mecanico/disponibles".
+    /// Ordenados FIFO (los más viejos primero).
+    /// </summary>
+    [HttpGet("me/available-services")]
+    [Authorize(Roles = "Mechanic")]
+    [ProducesResponseType(typeof(IReadOnlyList<AvailableServiceDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyAvailableServices(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetMyAvailableServicesQuery(), cancellationToken);
         return Ok(result);
     }
 }

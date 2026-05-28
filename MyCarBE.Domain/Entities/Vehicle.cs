@@ -31,10 +31,20 @@ public class Vehicle : BaseEntity
     public Guid? FleetId { get; set; }
     public Fleet? Fleet { get; set; }
 
+    /// <summary>
+    /// Token único usado para identificar al vehículo en la estación pública de viajes
+    /// (QR pegado adentro del auto). Null = el vehículo no tiene estación habilitada todavía.
+    /// El encargado lo genera / regenera desde su panel.
+    /// </summary>
+    public string? TripToken { get; set; }
+
     // Navegación
     public ICollection<WorkOrder> WorkOrders { get; set; } = new List<WorkOrder>();
     public ICollection<MaintenanceAlert> MaintenanceAlerts { get; set; } = new List<MaintenanceAlert>();
     public ICollection<DeclaredServiceHistory> DeclaredServiceHistories { get; set; } = new List<DeclaredServiceHistory>();
+    public ICollection<VehicleDocument> Documents { get; set; } = new List<VehicleDocument>();
+    public ICollection<VehicleTrip> Trips { get; set; } = new List<VehicleTrip>();
+    public ICollection<VehicleTire> Tires { get; set; } = new List<VehicleTire>();
 
     // -------------------------------------------------------------------------
     // Regla de negocio: XOR de titularidad

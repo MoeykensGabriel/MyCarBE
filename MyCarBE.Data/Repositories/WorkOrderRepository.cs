@@ -20,9 +20,21 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
                 .ThenInclude(s => s.Photos.Where(p => !p.IsDeleted))
             .Include(w => w.Services.Where(s => !s.IsDeleted))
                 .ThenInclude(s => s.AssignedMechanic)
+            .Include(w => w.Services.Where(s => !s.IsDeleted))
+                .ThenInclude(s => s.Area)
+            // Reports de inspección con área + mecánico — para que el cliente vea quién
+            // revisó cada parte del auto y emparejemos las fotos antes/después por área.
+            .Include(w => w.InspectionReports.Where(r => !r.IsDeleted))
+                .ThenInclude(r => r.Area)
+            .Include(w => w.InspectionReports.Where(r => !r.IsDeleted))
+                .ThenInclude(r => r.Mechanic)
             // CatalogService ya no se incluye: la duración ahora vive en
             // EstimatedDurationMinutesSnapshot del WorkOrderService (soporta ad-hoc).
-            .Include(w => w.Photos.Where(p => !p.IsDeleted && p.WorkOrderServiceId == null))
+            .Include(w => w.Parts.Where(p => !p.IsDeleted))
+            // Cargamos TODAS las fotos vivas — el FE filtra por target (workOrderServiceId,
+            // inspectionReportId, o ninguno = foto general del vehículo). La validación de
+            // pasaje a Delivered necesita ver el set completo.
+            .Include(w => w.Photos.Where(p => !p.IsDeleted))
             .Include(w => w.StatusChanges.OrderBy(sc => sc.ChangedAt))
             .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
 
@@ -71,6 +83,50 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
             .OrderByDescending(s => s.UpdatedAt)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<WorkOrderService>> GetAvailableServicesAsync(CancellationToken cancellationToken = default)
+        => await _context.WorkOrderServices
+            .Include(s => s.WorkOrder)
+                .ThenInclude(w => w.Vehicle)
+            .Include(s => s.WorkOrder)
+                .ThenInclude(w => w.CustomerAtEntry)
+            .Include(s => s.WorkOrder)
+                .ThenInclude(w => w.FleetAtEntry)
+            .Where(s =>
+                !s.IsDeleted &&
+                s.AssignmentStatus    == WorkOrderServiceAssignmentStatus.Unassigned &&
+                s.AssignedMechanicId  == null &&
+                s.ApprovalStatus      == Domain.Enums.QuoteItemApprovalStatus.Approved &&
+                s.WorkOrder.CurrentStatus == WorkOrderStatus.InProgress)
+            // FIFO: los servicios más viejos del pool se ofrecen primero (justo entre mecánicos).
+            .OrderBy(s => s.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<WorkOrder>> GetUnderInspectionWithReportsAsync(CancellationToken cancellationToken = default)
+        => await _context.WorkOrders
+            .Include(w => w.Vehicle)
+            .Include(w => w.CustomerAtEntry)
+            .Include(w => w.FleetAtEntry)
+            .Include(w => w.InspectionReports)
+            .Where(w => w.CurrentStatus == WorkOrderStatus.UnderInspection)
+            .OrderBy(w => w.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<WorkOrderService>> GetScheduledServicesAsync(
+        DateTime from, DateTime to, CancellationToken cancellationToken = default)
+        => await _context.WorkOrderServices
+            .Include(s => s.WorkOrder)
+                .ThenInclude(w => w.Vehicle)
+            .Include(s => s.AssignedMechanic)
+            .Include(s => s.Area)
+            .Where(s =>
+                !s.IsDeleted &&
+                s.ScheduledStart != null &&
+                s.ScheduledEnd   != null &&
+                s.ScheduledStart <= to &&
+                s.ScheduledEnd   >= from)
+            .OrderBy(s => s.ScheduledStart)
+            .ToListAsync(cancellationToken);
 
     private static async Task<PagedResult<WorkOrder>> PagedAsync(
         IQueryable<WorkOrder> query, WorkOrderStatus? status, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken)

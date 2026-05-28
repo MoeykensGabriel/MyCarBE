@@ -31,9 +31,20 @@ public class WorkOrderMappings : IRegister
             // Duración del snapshot — soporta servicios del catálogo y ad-hoc por igual.
             // El handler de AddService snapshotea la duración al crear, así que siempre
             // hay un valor confiable acá (0 solo en datos legacy pre-snapshot).
-            .Map(dest => dest.EstimatedDurationMinutes, src => src.EstimatedDurationMinutesSnapshot);
+            .Map(dest => dest.EstimatedDurationMinutes, src => src.EstimatedDurationMinutesSnapshot)
+            .Map(dest => dest.AreaName, src => src.Area != null ? src.Area.Name : null);
 
         config.NewConfig<WorkOrderPhoto, WorkOrderPhotoDto>();
+
+        config.NewConfig<InspectionReport, WorkOrderInspectionReportLiteDto>()
+            .Map(d => d.AreaName, s => s.Area.Name)
+            .Map(d => d.MechanicFullName, s =>
+                s.Mechanic != null
+                    ? $"{s.Mechanic.FirstName} {s.Mechanic.LastName}".Trim()
+                    : null);
+
+        config.NewConfig<WorkOrderPart, WorkOrderPartDto>()
+            .Map(dest => dest.Subtotal, src => src.UnitPrice * src.Quantity);
 
         config.NewConfig<WorkOrder, WorkOrderDetailDto>()
             .Map(dest => dest.VehicleBrand,        src => src.Vehicle.Brand)
@@ -46,6 +57,7 @@ public class WorkOrderMappings : IRegister
                         ? src.FleetAtEntry.CompanyName
                         : null)
             .Map(dest => dest.Services,  src => src.Services)
+            .Map(dest => dest.Parts,     src => src.Parts)
             .Map(dest => dest.Photos,    src => src.Photos)
             .Map(dest => dest.Timeline,  src => src.StatusChanges);
     }
