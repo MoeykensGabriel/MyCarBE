@@ -29,18 +29,17 @@ public static class TireWearCalculator
     /// <summary>Diferencia max-min entre los 3 puntos que dispara el flag de desgaste irregular.</summary>
     public const decimal IrregularSpreadThresholdMm = 2.0m;
 
-    public static TireWearEstimationDto Calculate(VehicleTire tire, int? currentVehicleMileage = null)
+    public static TireWearEstimationDto Calculate(VehicleTire tire)
     {
         var measurements = (tire.Measurements ?? new List<VehicleTireMeasurement>())
             .OrderBy(m => m.VehicleMileageAtMeasurement)
             .ToList();
 
-        // Profundidad actual: última medición si existe, sino la inicial.
+        // Profundidad actual: SIEMPRE el último valor medido por el técnico de gomería
+        // en la inspección (dato real, nunca estimado). Si todavía no hay mediciones,
+        // usamos la profundidad inicial de fábrica como referencia.
         var last           = measurements.LastOrDefault();
         var currentDepthMm = last?.AverageDepthMm ?? tire.InitialTreadDepthMm;
-        var currentKm      = currentVehicleMileage
-                             ?? last?.VehicleMileageAtMeasurement
-                             ?? tire.InstalledAtKm;
 
         var status = ClassifyStatus(currentDepthMm);
 

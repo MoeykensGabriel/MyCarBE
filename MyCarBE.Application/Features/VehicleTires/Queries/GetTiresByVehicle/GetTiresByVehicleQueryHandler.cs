@@ -29,16 +29,15 @@ public class GetTiresByVehicleQueryHandler
 
     public async Task<IReadOnlyList<VehicleTireDto>> Handle(GetTiresByVehicleQuery request, CancellationToken cancellationToken)
     {
-        // Guard devuelve el Vehicle ya cargado; aprovechamos el CurrentMileage para
-        // anclar la estimación al kilometraje vigente del auto.
-        var vehicle = await VehicleOwnershipGuard.EnsureAccessAsync(
+        // Valida ownership (Admin / Customer dueño / Fleet Contact) o tira NotFound.
+        await VehicleOwnershipGuard.EnsureAccessAsync(
             request.VehicleId, _vehicleRepository, _currentUser, cancellationToken);
 
         var tires = await _tireRepository.GetByVehicleAsync(
             request.VehicleId, request.IncludeReplaced, cancellationToken);
 
         return tires
-            .Select(t => VehicleTireDtoFactory.Build(t, _mapper, vehicle.CurrentMileage))
+            .Select(t => VehicleTireDtoFactory.Build(t, _mapper))
             .ToList();
     }
 }

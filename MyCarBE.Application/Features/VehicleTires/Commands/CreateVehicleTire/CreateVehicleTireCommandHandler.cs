@@ -69,6 +69,6 @@ public class CreateVehicleTireCommandHandler
         await _tireRepository.AddAsync(tire, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return VehicleTireDtoFactory.Build(tire, _mapper, currentVehicleMileage: request.InstalledAtKm);
+        return VehicleTireDtoFactory.Build(tire, _mapper);
     }
 }

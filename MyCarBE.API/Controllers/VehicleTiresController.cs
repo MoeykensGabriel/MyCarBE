@@ -46,7 +46,8 @@ public class VehicleTiresController : ControllerBase
         decimal  InnerDepthMm,
         decimal  CenterDepthMm,
         decimal  OuterDepthMm,
-        string?  Notes);
+        string?  Notes,
+        Guid?    WorkOrderId);
 
     public record ReplaceTireBody(
         DateOnly ReplacedOn,
@@ -120,7 +121,8 @@ public class VehicleTiresController : ControllerBase
             body.InnerDepthMm,
             body.CenterDepthMm,
             body.OuterDepthMm,
-            body.Notes), cancellationToken);
+            body.Notes,
+            body.WorkOrderId), cancellationToken);
 
         return Ok(dto);
     }

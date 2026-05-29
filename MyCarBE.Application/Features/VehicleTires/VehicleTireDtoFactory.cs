@@ -10,14 +10,14 @@ namespace MyCarBE.Application.Features.VehicleTires;
 /// </summary>
 internal static class VehicleTireDtoFactory
 {
-    public static VehicleTireDto Build(VehicleTire tire, IMapper mapper, int? currentVehicleMileage)
+    public static VehicleTireDto Build(VehicleTire tire, IMapper mapper)
     {
         var measurements = (tire.Measurements ?? new List<VehicleTireMeasurement>())
             .OrderBy(m => m.MeasuredOn)
             .Select(m => mapper.Map<VehicleTireMeasurementDto>(m))
             .ToList();
 
-        var estimation = TireWearCalculator.Calculate(tire, currentVehicleMileage);
+        var estimation = TireWearCalculator.Calculate(tire);
 
         return new VehicleTireDto(
             Id:                  tire.Id,

@@ -21,8 +21,16 @@ public class VehicleTireMeasurementConfiguration : IEntityTypeConfiguration<Vehi
                .HasForeignKey(m => m.VehicleTireId)
                .OnDelete(DeleteBehavior.Cascade);
 
+        // Vínculo opcional con la orden. Restrict: borrar una orden NO borra el historial
+        // de mediciones de la cubierta (el dato de desgaste vive con el vehículo).
+        builder.HasOne(m => m.WorkOrder)
+               .WithMany()
+               .HasForeignKey(m => m.WorkOrderId)
+               .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(m => m.VehicleTireId);
         builder.HasIndex(m => new { m.VehicleTireId, m.MeasuredOn });
+        builder.HasIndex(m => m.WorkOrderId);
 
         // Average y Spread son computed → ignorados por EF
         builder.Ignore(m => m.AverageDepthMm);

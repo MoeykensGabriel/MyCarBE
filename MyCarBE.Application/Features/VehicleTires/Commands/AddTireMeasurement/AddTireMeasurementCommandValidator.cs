@@ -20,5 +20,11 @@ public class AddTireMeasurementCommandValidator : AbstractValidator<AddTireMeasu
         RuleFor(x => x.OuterDepthMm) .InclusiveBetween(0m, 25m);
 
         RuleFor(x => x.Notes).MaximumLength(1000);
+
+        // WorkOrderId es opcional, pero si viene no puede ser un Guid vacío.
+        When(x => x.WorkOrderId.HasValue, () =>
+            RuleFor(x => x.WorkOrderId!.Value)
+                .NotEmpty()
+                .WithMessage("La orden de trabajo indicada no es válida."));
     }
 }

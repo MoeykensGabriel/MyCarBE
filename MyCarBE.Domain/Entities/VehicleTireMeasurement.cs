@@ -31,6 +31,14 @@ public class VehicleTireMeasurement : BaseEntity
     /// <summary>Usuario que tomó la medición (admin, recepcionista o mecánico).</summary>
     public Guid? MeasuredByUserId { get; set; }
 
+    /// <summary>
+    /// Orden de trabajo (visita) en la que se tomó esta medición, si aplica.
+    /// Nullable: una medición puede cargarse sin una orden abierta (ej. control de rutina).
+    /// Da trazabilidad — "¿en qué visita midieron esto?" — sin acoplar la cubierta a la orden.
+    /// </summary>
+    public Guid? WorkOrderId { get; set; }
+    public WorkOrder? WorkOrder { get; set; }
+
     /// <summary>Promedio de los tres puntos. Útil para queries; no se persiste — se calcula al vuelo.</summary>
     public decimal AverageDepthMm => (InnerDepthMm + CenterDepthMm + OuterDepthMm) / 3m;
 

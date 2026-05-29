@@ -12,5 +12,6 @@ public record VehicleTireMeasurementDto(
     decimal  SpreadMm,
     string?  Notes,
     Guid?    MeasuredByUserId,
+    Guid?    WorkOrderId,
     DateTime CreatedAt
 );

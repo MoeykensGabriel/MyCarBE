@@ -10,5 +10,6 @@ public record AddTireMeasurementCommand(
     decimal  InnerDepthMm,
     decimal  CenterDepthMm,
     decimal  OuterDepthMm,
-    string?  Notes
+    string?  Notes,
+    Guid?    WorkOrderId
 ) : IRequest<VehicleTireDto>;
