@@ -2530,6 +2530,42 @@ no se puede diseñar nada.
 - [ ] Vista "mis turnos" en el portal del cliente.
 - [ ] Conexión con stock: bloquear turno si los repuestos no llegaron.
 
+#### C. Estación de Viajes (feature premium, apagada por defecto)
+
+**Estado:** Construida y funcional (QR de estación + registro de viajes por chofer +
+historial). Hoy se ofrece a TODA flota (se muestra cuando el vehículo tiene `FleetId`).
+
+**Decisión de producto:** NO debe formar parte del sistema base. Es una función
+premium que se habilita **a dedo, por flota**. La feature queda escrita y registrada,
+pero apagada por defecto; se prende solo a las flotas que la contraten.
+
+**Mecanismo elegido — entitlement por flota (flag en la entidad `Fleet`):**
+Se prefiere un flag persistente sobre la entidad antes que un feature flag global por
+config (que sería todo-o-nada) o una tabla genérica de feature flags (andamiaje
+excesivo para una sola función). Si en el futuro aparecen varias funciones premium,
+recién ahí conviene migrar a una tabla `FleetFeatureFlags` genérica.
+
+**Plan de implementación (cuando se habilite):**
+- [ ] **Dominio:** agregar `bool TripStationEnabled` a `Fleet` (default `false`).
+- [ ] **Migración:** AddColumn `TripStationEnabled` (bool, default false) en `Fleets`.
+- [ ] **DTOs:** exponer el flag en el DTO de flota y propagar `tripStationEnabled` al
+      DTO de vehículo (lo consume el portal del cliente/flota).
+- [ ] **Gate en FE:** en `my-vehicles/[id]/page.tsx` cambiar la condición actual
+      `vehicle.fleetId && (...)` por `vehicle.fleetId && vehicle.tripStationEnabled && (...)`
+      para `TripStationQrCard` + `VehicleTripsHistoryCard`.
+- [ ] **Gate en BE (CLAVE — no alcanza con ocultar en FE):** en los endpoints de viajes
+      (generar/rotar token de estación, registrar viaje, historial, y la página pública
+      `/trip/{token}`) validar que la flota del vehículo tiene `TripStationEnabled == true`;
+      si no, devolver 403/404. Ocultar la UI sin cerrar el backend deja la función
+      accesible a cualquiera que conozca la URL.
+- [ ] **Activación operativa:** toggle en el panel admin de la flota
+      (`admin/fleets/[id]`) para que el taller la prenda/apague por flota. Alternativa
+      rápida: setear el flag directo en DB.
+
+**Por qué este enfoque:** encaja con el dominio (la función es "para dueños de flota"),
+es persistente, auditable y gestionable desde la UI sin necesidad de deploy para
+habilitar a un cliente nuevo.
+
 ---
 
 ## 📌 ACLARACIONES DEL CLIENTE / MECÁNICO — 2026-05-23
