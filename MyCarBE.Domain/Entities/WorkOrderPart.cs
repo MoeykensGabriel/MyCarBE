@@ -28,8 +28,28 @@ public class WorkOrderPart : BaseEntity
     /// <summary>Descripción libre del repuesto (lo que ve el cliente en el presupuesto).</summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Costo interno del repuesto para el taller. NO se muestra al cliente en el PDF.
+    /// Sirve para que el admin calcule su margen.
+    /// </summary>
     public decimal UnitPrice { get; set; }
+
+    /// <summary>
+    /// Precio unitario que ve el cliente en el presupuesto (PDF), con el markup que defina
+    /// el admin. Si es null, se usa <see cref="UnitPrice"/> como fallback (retrocompatible).
+    /// </summary>
+    public decimal? CustomerUnitPrice { get; set; }
+
     public int Quantity { get; set; } = 1;
+
+    /// <summary>Subtotal de costo interno (costo × cantidad). Uso interno del taller.</summary>
+    public decimal Subtotal => UnitPrice * Quantity;
+
+    /// <summary>Precio unitario efectivo de cara al cliente: el markup si existe, si no el costo.</summary>
+    public decimal EffectiveCustomerUnitPrice => CustomerUnitPrice ?? UnitPrice;
+
+    /// <summary>Subtotal de cara al cliente (precio cliente × cantidad). Es lo que va al PDF/total.</summary>
+    public decimal CustomerSubtotal => EffectiveCustomerUnitPrice * Quantity;
 
     public WorkOrderPartTier Tier { get; set; } = WorkOrderPartTier.Generic;
 

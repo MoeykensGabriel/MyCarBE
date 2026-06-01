@@ -47,6 +47,7 @@ public class UpdateWorkOrderPartCommandHandler
         part.ProductCode        = string.IsNullOrWhiteSpace(request.ProductCode) ? null : request.ProductCode.Trim();
         part.Name               = request.Name.Trim();
         part.UnitPrice          = request.UnitPrice;
+        part.CustomerUnitPrice  = request.CustomerUnitPrice;
         part.Quantity           = request.Quantity;
         part.Tier               = request.Tier;
         part.AlternativeGroupId = request.AlternativeGroupId;

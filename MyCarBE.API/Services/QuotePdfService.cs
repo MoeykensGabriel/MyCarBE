@@ -129,6 +129,56 @@ public class QuotePdfService : IPdfService
                         }
                     });
 
+                    // Tabla de repuestos — resumida: el cliente ve nombre, cantidad y precio,
+                    // pero NO el código de proveedor, el tier ni el costo interno del taller.
+                    // El precio mostrado es el precio de cliente (markup); si no hay, cae al costo.
+                    if (wo.Parts.Any())
+                    {
+                        col.Item().PaddingTop(14);
+                        col.Item().Text("REPUESTOS").Bold().FontSize(9).FontColor("#777");
+                        col.Item().PaddingTop(6).Table(partsTable =>
+                        {
+                            partsTable.ColumnsDefinition(cols =>
+                            {
+                                cols.ConstantColumn(35);   // Cant.
+                                cols.RelativeColumn();      // Repuesto
+                                cols.ConstantColumn(90);   // Precio unitario
+                                cols.ConstantColumn(90);   // Subtotal
+                            });
+
+                            static IContainer PartHeaderCell(IContainer c) =>
+                                c.Background("#1a1a2e").Padding(6);
+
+                            partsTable.Header(h =>
+                            {
+                                h.Cell().Element(PartHeaderCell).AlignCenter()
+                                    .Text("Cant.").FontColor(Colors.White).Bold().FontSize(9);
+                                h.Cell().Element(PartHeaderCell)
+                                    .Text("Repuesto").FontColor(Colors.White).Bold().FontSize(9);
+                                h.Cell().Element(PartHeaderCell).AlignRight()
+                                    .Text("Precio unit.").FontColor(Colors.White).Bold().FontSize(9);
+                                h.Cell().Element(PartHeaderCell).AlignRight()
+                                    .Text("Subtotal").FontColor(Colors.White).Bold().FontSize(9);
+                            });
+
+                            var isOddPart = false;
+                            foreach (var part in wo.Parts)
+                            {
+                                var bg = isOddPart ? "#f8f9fa" : "#ffffff";
+                                isOddPart = !isOddPart;
+
+                                IContainer PartCell(IContainer c) => c.Background(bg).Padding(6);
+
+                                partsTable.Cell().Element(PartCell).AlignCenter().Text(part.Quantity.ToString());
+                                partsTable.Cell().Element(PartCell).Text(part.Name).Bold();
+                                partsTable.Cell().Element(PartCell).AlignRight()
+                                    .Text($"$ {(part.CustomerUnitPrice ?? part.UnitPrice):N0}");
+                                partsTable.Cell().Element(PartCell).AlignRight()
+                                    .Text($"$ {part.CustomerSubtotal:N0}").Bold();
+                            }
+                        });
+                    }
+
                     // Total
                     col.Item().PaddingTop(8).AlignRight().Row(r =>
                     {
@@ -148,7 +198,7 @@ public class QuotePdfService : IPdfService
                         c.Item().Text("⚠ Este presupuesto requiere su aprobación para continuar con el trabajo.")
                             .Bold().FontSize(9).FontColor("#856404");
                         c.Item().PaddingTop(4)
-                            .Text("Al aprobar, autoriza la realización de los servicios detallados arriba.")
+                            .Text("Al aprobar, autoriza la realización de los servicios y repuestos detallados arriba.")
                             .FontSize(9).FontColor("#856404");
                     });
                 });

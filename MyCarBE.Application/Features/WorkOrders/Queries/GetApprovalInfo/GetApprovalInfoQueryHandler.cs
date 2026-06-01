@@ -44,9 +44,9 @@ public class GetApprovalInfoQueryHandler : IRequestHandler<GetApprovalInfoQuery,
                 Id:                 p.Id,
                 Name:               p.Name,
                 ProductCode:        p.ProductCode,
-                UnitPrice:          p.UnitPrice,
+                UnitPrice:          p.EffectiveCustomerUnitPrice,
                 Quantity:           p.Quantity,
-                Subtotal:           p.UnitPrice * p.Quantity,
+                Subtotal:           p.CustomerSubtotal,
                 Tier:               p.Tier,
                 AlternativeGroupId: p.AlternativeGroupId))
             .ToList();

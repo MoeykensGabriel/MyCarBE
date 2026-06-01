@@ -45,6 +45,7 @@ public class AddPartToWorkOrderCommandHandler
             ProductCode        = string.IsNullOrWhiteSpace(request.ProductCode) ? null : request.ProductCode.Trim(),
             Name               = request.Name.Trim(),
             UnitPrice          = request.UnitPrice,
+            CustomerUnitPrice  = request.CustomerUnitPrice,
             Quantity           = request.Quantity,
             Tier               = request.Tier,
             AlternativeGroupId = request.AlternativeGroupId,

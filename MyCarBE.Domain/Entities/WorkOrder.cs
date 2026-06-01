@@ -168,9 +168,11 @@ public class WorkOrder : BaseEntity
             .Where(s => !s.IsDeleted && s.ApprovalStatus != Enums.QuoteItemApprovalStatus.Rejected)
             .Sum(s => s.PriceSnapshot * s.Quantity);
 
+        // Los repuestos suman al total con el PRECIO DE CLIENTE (markup) — que es lo que ve y
+        // aprueba el cliente en el PDF. Si no hay precio de cliente, cae al costo interno.
         var partsTotal = Parts
             .Where(p => !p.IsDeleted && p.ApprovalStatus != Enums.QuoteItemApprovalStatus.Rejected)
-            .Sum(p => p.UnitPrice * p.Quantity);
+            .Sum(p => p.CustomerSubtotal);
 
         TotalAmount = servicesTotal + partsTotal;
     }

@@ -15,6 +15,12 @@ public class WorkOrderPartConfiguration : IEntityTypeConfiguration<WorkOrderPart
         builder.Property(p => p.ProductCode).HasMaxLength(100);
         builder.Property(p => p.Name).IsRequired().HasMaxLength(200);
         builder.Property(p => p.UnitPrice).HasColumnType("numeric(18,2)");
+        builder.Property(p => p.CustomerUnitPrice).HasColumnType("numeric(18,2)");
+
+        // Propiedades calculadas — no se persisten.
+        builder.Ignore(p => p.Subtotal);
+        builder.Ignore(p => p.EffectiveCustomerUnitPrice);
+        builder.Ignore(p => p.CustomerSubtotal);
 
         builder.Property(p => p.Tier)
                .HasConversion<int>()
