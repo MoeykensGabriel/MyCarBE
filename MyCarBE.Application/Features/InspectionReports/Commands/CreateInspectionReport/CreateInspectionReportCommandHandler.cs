@@ -13,6 +13,8 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
     private readonly IInspectionReportRepository _repository;
     private readonly IMechanicRepository         _mechanicRepository;
     private readonly IWorkOrderRepository        _workOrderRepository;
+    private readonly IVehicleTireRepository      _tireRepository;
+    private readonly IVehicleBatteryRepository   _batteryRepository;
     private readonly ICurrentUserService         _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly IMapper                     _mapper;
@@ -21,6 +23,8 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
         IInspectionReportRepository repository,
         IMechanicRepository         mechanicRepository,
         IWorkOrderRepository        workOrderRepository,
+        IVehicleTireRepository      tireRepository,
+        IVehicleBatteryRepository   batteryRepository,
         ICurrentUserService         currentUser,
         IUnitOfWork                 unitOfWork,
         IMapper                     mapper)
@@ -28,6 +32,8 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
         _repository          = repository;
         _mechanicRepository  = mechanicRepository;
         _workOrderRepository = workOrderRepository;
+        _tireRepository      = tireRepository;
+        _batteryRepository   = batteryRepository;
         _currentUser         = currentUser;
         _unitOfWork          = unitOfWork;
         _mapper              = mapper;
@@ -46,8 +52,19 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
             throw new ForbiddenException("Mecánico desactivado no puede reportar inspecciones.");
 
         // Validar que el mecánico esté asignado al área del reporte
-        if (!mechanic.Areas.Any(a => a.Id == request.AreaId))
-            throw new ForbiddenException("No estás asignado al área de este reporte.");
+        var area = mechanic.Areas.FirstOrDefault(a => a.Id == request.AreaId)
+            ?? throw new ForbiddenException("No estás asignado al área de este reporte.");
+
+        // Las cubiertas solo las puede cargar el mecánico del área de cubiertas: es "el que sabe".
+        var tires = request.Tires ?? Array.Empty<TireInspectionInput>();
+        if (tires.Count > 0 && !area.IsTireArea)
+            throw new BadRequestException(
+                "Solo el reporte del área de cubiertas puede incluir datos de cubiertas.");
+
+        // La batería solo la puede cargar el mecánico del área de batería.
+        if (request.Battery is not null && !area.IsBatteryArea)
+            throw new BadRequestException(
+                "Solo el reporte del área de batería puede incluir datos de batería.");
 
         // Validar que la orden exista y esté en fase de inspección
         var workOrder = await _workOrderRepository.GetByIdAsync(request.WorkOrderId, cancellationToken)
@@ -113,6 +130,106 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
         }
 
         await _repository.AddAsync(report, cancellationToken);
+
+        // Datos de cubiertas cargados por el mecánico del área de cubiertas.
+        // Para cada posición revisada: si no hay cubierta activa, la damos de alta usando los km
+        // de ingreso de la orden como línea base; después registramos la medición de 3 puntos,
+        // trazada a esta orden (WorkOrderId).
+        if (tires.Count > 0)
+        {
+            var measuredOn = DateTime.UtcNow;
+            var measuredByUserId = _currentUser.UserId == Guid.Empty ? (Guid?)null : _currentUser.UserId;
+
+            foreach (var input in tires)
+            {
+                var tire = await _tireRepository.GetActiveByPositionAsync(
+                    workOrder.VehicleId, input.Position, cancellationToken);
+
+                if (tire is null)
+                {
+                    if (string.IsNullOrWhiteSpace(input.Brand) || string.IsNullOrWhiteSpace(input.SizeSpec))
+                        throw new BadRequestException(
+                            $"La posición {input.Position} no tiene cubierta registrada: " +
+                            "indicá al menos marca y medida para darla de alta.");
+
+                    tire = new VehicleTire
+                    {
+                        Id                  = Guid.NewGuid(),
+                        VehicleId           = workOrder.VehicleId,
+                        Position            = input.Position,
+                        Brand               = input.Brand!.Trim(),
+                        Model               = string.IsNullOrWhiteSpace(input.Model) ? string.Empty : input.Model!.Trim(),
+                        SizeSpec            = input.SizeSpec!.Trim(),
+                        InstalledOn         = DateOnly.FromDateTime(measuredOn),
+                        InstalledAtKm       = workOrder.MileageAtEntry,
+                        InitialTreadDepthMm = input.InitialTreadDepthMm ?? 8.0m,
+                        ExpectedLifeKm      = input.ExpectedLifeKm ?? 0,
+                        IsActive            = true,
+                    };
+                    await _tireRepository.AddAsync(tire, cancellationToken);
+                }
+
+                tire.Measurements.Add(new VehicleTireMeasurement
+                {
+                    Id                          = Guid.NewGuid(),
+                    VehicleTireId               = tire.Id,
+                    MeasuredOn                  = measuredOn,
+                    VehicleMileageAtMeasurement = workOrder.MileageAtEntry,
+                    InnerDepthMm                = input.InnerDepthMm,
+                    CenterDepthMm               = input.CenterDepthMm,
+                    OuterDepthMm                = input.OuterDepthMm,
+                    Notes                       = string.IsNullOrWhiteSpace(input.Notes) ? null : input.Notes.Trim(),
+                    MeasuredByUserId            = measuredByUserId,
+                    WorkOrderId                 = workOrder.Id,
+                });
+            }
+        }
+
+        // Estado de batería cargado por el mecánico del área de batería. Si el vehículo no
+        // tiene batería registrada, la damos de alta con los km de ingreso como línea base;
+        // después agregamos el chequeo trazado a esta orden.
+        if (request.Battery is not null)
+        {
+            var checkedOn = DateTime.UtcNow;
+            var checkedByUserId = _currentUser.UserId == Guid.Empty ? (Guid?)null : _currentUser.UserId;
+
+            var battery = await _batteryRepository.GetActiveByVehicleAsync(workOrder.VehicleId, cancellationToken);
+
+            if (battery is null)
+            {
+                battery = new VehicleBattery
+                {
+                    Id             = Guid.NewGuid(),
+                    VehicleId      = workOrder.VehicleId,
+                    Brand          = string.IsNullOrWhiteSpace(request.Battery.Brand) ? null : request.Battery.Brand.Trim(),
+                    ManufacturedOn = request.Battery.ManufacturedOn,
+                    InstalledOn    = DateOnly.FromDateTime(checkedOn),
+                    InstalledAtKm  = workOrder.MileageAtEntry,
+                    IsActive       = true,
+                };
+                await _batteryRepository.AddAsync(battery, cancellationToken);
+            }
+            else if (!string.IsNullOrWhiteSpace(request.Battery.Brand) && string.IsNullOrWhiteSpace(battery.Brand))
+            {
+                // Completar marca/fabricación si no estaban cargadas y ahora el mecánico las informa.
+                battery.Brand = request.Battery.Brand.Trim();
+                battery.ManufacturedOn ??= request.Battery.ManufacturedOn;
+            }
+
+            battery.Checks.Add(new VehicleBatteryCheck
+            {
+                Id                    = Guid.NewGuid(),
+                VehicleBatteryId      = battery.Id,
+                CheckedOn             = checkedOn,
+                VehicleMileageAtCheck = workOrder.MileageAtEntry,
+                Status                = request.Battery.Status,
+                Voltage               = request.Battery.Voltage,
+                Notes                 = string.IsNullOrWhiteSpace(request.Battery.Notes) ? null : request.Battery.Notes.Trim(),
+                CheckedByUserId       = checkedByUserId,
+                WorkOrderId           = workOrder.Id,
+            });
+        }
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Reload con Area/Mechanic para el DTO

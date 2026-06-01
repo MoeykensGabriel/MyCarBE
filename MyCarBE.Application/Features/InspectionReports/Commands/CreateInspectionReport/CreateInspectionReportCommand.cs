@@ -17,5 +17,11 @@ public record CreateInspectionReportCommand(
     string? Findings,
     bool    HasIssue,
     IReadOnlyList<ProposedServiceInput>? ProposedServices = null,
-    IReadOnlyList<ProposedPartInput>?    ProposedParts    = null
+    IReadOnlyList<ProposedPartInput>?    ProposedParts    = null,
+    // Solo aplica cuando el área del reporte tiene IsTireArea=true (área de cubiertas).
+    // Una entrada por posición revisada. Si el área no es de cubiertas, debe venir vacío.
+    IReadOnlyList<TireInspectionInput>?  Tires            = null,
+    // Solo aplica cuando el área del reporte tiene IsBatteryArea=true (área de batería).
+    // El vehículo tiene una sola batería. Si el área no es de batería, debe venir null.
+    BatteryInspectionInput?              Battery          = null
 ) : IRequest<InspectionReportDto>;

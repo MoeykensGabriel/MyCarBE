@@ -39,6 +39,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<VehicleTrip> VehicleTrips => Set<VehicleTrip>();
     public DbSet<VehicleTire> VehicleTires => Set<VehicleTire>();
     public DbSet<VehicleTireMeasurement> VehicleTireMeasurements => Set<VehicleTireMeasurement>();
+    public DbSet<VehicleBattery> VehicleBatteries => Set<VehicleBattery>();
+    public DbSet<VehicleBatteryCheck> VehicleBatteryChecks => Set<VehicleBatteryCheck>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

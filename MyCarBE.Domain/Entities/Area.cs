@@ -12,6 +12,20 @@ public class Area : BaseEntity
     public string Name { get; set; } = string.Empty; // único
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Marca el área responsable del control de cubiertas. El mecánico de esta área
+    /// es "el que sabe de cubiertas": al cargar su reporte de inspección puede adjuntar
+    /// los datos y mediciones de las cubiertas del vehículo. Solo una área debería tenerlo.
+    /// </summary>
+    public bool IsTireArea { get; set; }
+
+    /// <summary>
+    /// Marca el área responsable del control de batería. El mecánico de esta área, al cargar
+    /// su reporte de inspección, puede adjuntar el estado/voltaje de la batería del vehículo.
+    /// Solo una área debería tenerlo.
+    /// </summary>
+    public bool IsBatteryArea { get; set; }
+
     // Navegación M-a-N — EF Core genera tabla puente automáticamente
     public ICollection<Mechanic> Mechanics { get; set; } = new List<Mechanic>();
 }

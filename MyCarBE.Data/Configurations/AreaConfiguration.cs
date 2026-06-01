@@ -17,6 +17,8 @@ public class AreaConfiguration : IEntityTypeConfiguration<Area>
     public static readonly Guid CarroceriaId       = Guid.Parse("11111111-0000-0000-0000-000000000008");
     public static readonly Guid AireAcondicionadoId = Guid.Parse("11111111-0000-0000-0000-000000000009");
     public static readonly Guid DiagnosticoCompId  = Guid.Parse("11111111-0000-0000-0000-00000000000a");
+    public static readonly Guid CubiertasId        = Guid.Parse("11111111-0000-0000-0000-00000000000b");
+    public static readonly Guid BateriaId          = Guid.Parse("11111111-0000-0000-0000-00000000000c");
 
     public void Configure(EntityTypeBuilder<Area> builder)
     {
@@ -25,6 +27,8 @@ public class AreaConfiguration : IEntityTypeConfiguration<Area>
 
         builder.Property(a => a.Name).IsRequired().HasMaxLength(100);
         builder.Property(a => a.IsActive).HasDefaultValue(true);
+        builder.Property(a => a.IsTireArea).HasDefaultValue(false);
+        builder.Property(a => a.IsBatteryArea).HasDefaultValue(false);
 
         builder.HasIndex(a => a.Name).IsUnique();
         builder.HasIndex(a => a.IsActive);
@@ -47,7 +51,9 @@ public class AreaConfiguration : IEntityTypeConfiguration<Area>
             new Area { Id = EscapeId,            Name = "Escape",                 IsActive = true, CreatedAt = seedDate, UpdatedAt = seedDate, IsDeleted = false },
             new Area { Id = CarroceriaId,        Name = "Carrocería",             IsActive = true, CreatedAt = seedDate, UpdatedAt = seedDate, IsDeleted = false },
             new Area { Id = AireAcondicionadoId, Name = "Aire acondicionado",     IsActive = true, CreatedAt = seedDate, UpdatedAt = seedDate, IsDeleted = false },
-            new Area { Id = DiagnosticoCompId,   Name = "Diagnóstico computarizado", IsActive = true, CreatedAt = seedDate, UpdatedAt = seedDate, IsDeleted = false }
+            new Area { Id = DiagnosticoCompId,   Name = "Diagnóstico computarizado", IsActive = true, CreatedAt = seedDate, UpdatedAt = seedDate, IsDeleted = false },
+            new Area { Id = CubiertasId,         Name = "Cubiertas",              IsActive = true, IsTireArea = true, CreatedAt = seedDate, UpdatedAt = seedDate, IsDeleted = false },
+            new Area { Id = BateriaId,           Name = "Batería",                IsActive = true, IsBatteryArea = true, CreatedAt = seedDate, UpdatedAt = seedDate, IsDeleted = false }
         );
     }
 }

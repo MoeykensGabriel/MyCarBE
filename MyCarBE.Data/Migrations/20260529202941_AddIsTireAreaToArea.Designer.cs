@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyCarBE.Data.Context;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyCarBE.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260529202941_AddIsTireAreaToArea")]
+    partial class AddIsTireAreaToArea
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -281,11 +284,6 @@ namespace MyCarBE.Data.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
-                    b.Property<bool>("IsBatteryArea")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -317,7 +315,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000001"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Motor",
@@ -328,7 +325,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000002"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Frenos",
@@ -339,7 +335,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000003"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Tren delantero",
@@ -350,7 +345,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000004"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Suspensión",
@@ -361,7 +355,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000005"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Eléctrico",
@@ -372,7 +365,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000006"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Transmisión",
@@ -383,7 +375,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000007"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Escape",
@@ -394,7 +385,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000008"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Carrocería",
@@ -405,7 +395,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000009"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Aire acondicionado",
@@ -416,7 +405,6 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-00000000000a"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = false,
                             Name = "Diagnóstico computarizado",
@@ -427,21 +415,9 @@ namespace MyCarBE.Data.Migrations
                             Id = new Guid("11111111-0000-0000-0000-00000000000b"),
                             CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            IsBatteryArea = false,
                             IsDeleted = false,
                             IsTireArea = true,
                             Name = "Cubiertas",
-                            UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("11111111-0000-0000-0000-00000000000c"),
-                            CreatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            IsBatteryArea = true,
-                            IsDeleted = false,
-                            IsTireArea = false,
-                            Name = "Batería",
                             UpdatedAt = new DateTime(2026, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
@@ -1179,114 +1155,6 @@ namespace MyCarBE.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleBattery", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Brand")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int>("InstalledAtKm")
-                        .HasColumnType("integer");
-
-                    b.Property<DateOnly>("InstalledOn")
-                        .HasColumnType("date");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateOnly?>("ManufacturedOn")
-                        .HasColumnType("date");
-
-                    b.Property<int?>("ReplacedAtKm")
-                        .HasColumnType("integer");
-
-                    b.Property<DateOnly?>("ReplacedOn")
-                        .HasColumnType("date");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<Guid>("VehicleId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VehicleId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_VehicleBatteries_VehicleId_Active")
-                        .HasFilter("\"IsActive\" = TRUE AND \"IsDeleted\" = FALSE");
-
-                    b.ToTable("VehicleBatteries", (string)null);
-                });
-
-            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleBatteryCheck", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CheckedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CheckedOn")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<Guid>("VehicleBatteryId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("VehicleMileageAtCheck")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal?>("Voltage")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
-
-                    b.Property<Guid?>("WorkOrderId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VehicleBatteryId");
-
-                    b.HasIndex("WorkOrderId");
-
-                    b.HasIndex("VehicleBatteryId", "CheckedOn");
-
-                    b.ToTable("VehicleBatteryChecks", (string)null);
-                });
-
             modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1657,9 +1525,6 @@ namespace MyCarBE.Data.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<decimal?>("CustomerUnitPrice")
-                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp without time zone");
@@ -2120,35 +1985,6 @@ namespace MyCarBE.Data.Migrations
                     b.Navigation("Fleet");
                 });
 
-            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleBattery", b =>
-                {
-                    b.HasOne("MyCarBE.Domain.Entities.Vehicle", "Vehicle")
-                        .WithMany("Batteries")
-                        .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Vehicle");
-                });
-
-            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleBatteryCheck", b =>
-                {
-                    b.HasOne("MyCarBE.Domain.Entities.VehicleBattery", "VehicleBattery")
-                        .WithMany("Checks")
-                        .HasForeignKey("VehicleBatteryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MyCarBE.Domain.Entities.WorkOrder", "WorkOrder")
-                        .WithMany()
-                        .HasForeignKey("WorkOrderId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("VehicleBattery");
-
-                    b.Navigation("WorkOrder");
-                });
-
             modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleDocument", b =>
                 {
                     b.HasOne("MyCarBE.Domain.Entities.Vehicle", "Vehicle")
@@ -2348,8 +2184,6 @@ namespace MyCarBE.Data.Migrations
 
             modelBuilder.Entity("MyCarBE.Domain.Entities.Vehicle", b =>
                 {
-                    b.Navigation("Batteries");
-
                     b.Navigation("DeclaredServiceHistories");
 
                     b.Navigation("Documents");
@@ -2361,11 +2195,6 @@ namespace MyCarBE.Data.Migrations
                     b.Navigation("Trips");
 
                     b.Navigation("WorkOrders");
-                });
-
-            modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleBattery", b =>
-                {
-                    b.Navigation("Checks");
                 });
 
             modelBuilder.Entity("MyCarBE.Domain.Entities.VehicleTire", b =>

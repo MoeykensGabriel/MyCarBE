@@ -34,5 +34,37 @@ public class CreateInspectionReportCommandValidator : AbstractValidator<CreateIn
             p.RuleFor(x => x.ProductCode).MaximumLength(100);
             p.RuleFor(x => x.EstimatedUnitPrice).GreaterThanOrEqualTo(0).When(x => x.EstimatedUnitPrice.HasValue);
         });
+
+        // Cubiertas: no puede haber dos entradas para la misma posición en un mismo reporte.
+        RuleFor(x => x.Tires)
+            .Must(tires => tires == null ||
+                           tires.Select(t => t.Position).Distinct().Count() == tires.Count)
+            .WithMessage("No podés cargar dos veces la misma posición de cubierta.");
+
+        RuleForEach(x => x.Tires).ChildRules(t =>
+        {
+            t.RuleFor(x => x.Position).IsInEnum();
+
+            // Profundidad de banda: rango físico razonable (0 a 30mm cubre camión/agro).
+            t.RuleFor(x => x.InnerDepthMm).InclusiveBetween(0, 30);
+            t.RuleFor(x => x.CenterDepthMm).InclusiveBetween(0, 30);
+            t.RuleFor(x => x.OuterDepthMm).InclusiveBetween(0, 30);
+
+            t.RuleFor(x => x.Brand).MaximumLength(100);
+            t.RuleFor(x => x.Model).MaximumLength(100);
+            t.RuleFor(x => x.SizeSpec).MaximumLength(50);
+            t.RuleFor(x => x.Notes).MaximumLength(1000);
+            t.RuleFor(x => x.InitialTreadDepthMm).InclusiveBetween(0, 30).When(x => x.InitialTreadDepthMm.HasValue);
+            t.RuleFor(x => x.ExpectedLifeKm).GreaterThan(0).When(x => x.ExpectedLifeKm.HasValue);
+        });
+
+        // Batería: estado válido + voltaje en rango físico (0–24V cubre 12V y 24V).
+        When(x => x.Battery is not null, () =>
+        {
+            RuleFor(x => x.Battery!.Status).IsInEnum();
+            RuleFor(x => x.Battery!.Voltage).InclusiveBetween(0, 24).When(x => x.Battery!.Voltage.HasValue);
+            RuleFor(x => x.Battery!.Brand).MaximumLength(100);
+            RuleFor(x => x.Battery!.Notes).MaximumLength(1000);
+        });
     }
 }

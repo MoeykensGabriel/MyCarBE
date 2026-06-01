@@ -24,5 +24,7 @@ public record PendingInspectionDto(
 
 public record PendingInspectionAreaDto(
     Guid   AreaId,
-    string AreaName
+    string AreaName,
+    bool   IsTireArea,
+    bool   IsBatteryArea
 );

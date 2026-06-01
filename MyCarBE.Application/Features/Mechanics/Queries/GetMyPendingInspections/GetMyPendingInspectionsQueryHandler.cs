@@ -39,10 +39,10 @@ public class GetMyPendingInspectionsQueryHandler : IRequestHandler<GetMyPendingI
         if (myAreaIds.Count == 0)
             return Array.Empty<PendingInspectionDto>();
 
-        // Areas también necesita ser un diccionario para resolver el nombre en el DTO
+        // Areas también necesita ser un diccionario para resolver el nombre / flag en el DTO
         var myAreasById = mechanic.Areas
             .Where(a => a.IsActive)
-            .ToDictionary(a => a.Id, a => a.Name);
+            .ToDictionary(a => a.Id, a => a);
 
         var workOrders = await _workOrderRepository.GetUnderInspectionWithReportsAsync(cancellationToken);
 
@@ -59,7 +59,7 @@ public class GetMyPendingInspectionsQueryHandler : IRequestHandler<GetMyPendingI
                 continue;
 
             var pendingAreas = pendingForMe
-                .Select(id => new PendingInspectionAreaDto(id, myAreasById[id]))
+                .Select(id => new PendingInspectionAreaDto(id, myAreasById[id].Name, myAreasById[id].IsTireArea, myAreasById[id].IsBatteryArea))
                 .OrderBy(a => a.AreaName)
                 .ToList();
 
