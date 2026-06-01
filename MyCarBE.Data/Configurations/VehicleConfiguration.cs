@@ -29,6 +29,10 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
         builder.HasIndex(v => v.LicensePlate).IsUnique();
         builder.HasIndex(v => v.VIN).IsUnique().HasFilter("\"VIN\" IS NOT NULL");
 
+        // Nota: los índices sobre CustomerId y FleetId ya los crea EF Core automáticamente
+        // por ser foreign keys (ver HasOne/WithMany abajo). Aceleran el filtro por dueño del
+        // listado paginado (SearchPagedAsync) sin necesidad de declararlos explícitamente.
+
         // Token público para la estación de viajes (QR del chofer). Único y filtrado
         // para permitir múltiples vehículos sin token todavía.
         builder.Property(v => v.TripToken).HasMaxLength(64);
