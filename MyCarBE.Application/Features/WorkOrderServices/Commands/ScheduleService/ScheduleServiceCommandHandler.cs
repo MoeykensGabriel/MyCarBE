@@ -45,11 +45,11 @@ public class ScheduleServiceCommandHandler : IRequestHandler<ScheduleServiceComm
 
             var end = request.ScheduledEnd;
 
-            // Default: si no vino end y el mecánico estimó días, calcular automáticamente.
-            // Convención: si EstimatedDays=N, el trabajo ocupa N días contando el día de inicio
-            // ([Start, Start + N - 1 días]). El End queda al final del día Start + (N-1).
-            if (end is null && service.EstimatedDays is int days && days > 0)
-                end = request.ScheduledStart.Value.Date.AddDays(days - 1);
+            // Default: si no vino end y el mecánico estimó duración, calcular automáticamente.
+            // EstimatedDurationMinutes está en minutos (1 día laboral = 480 min), así que el
+            // End queda en Start + duración exacta (permite trabajos de horas, no solo días).
+            if (end is null && service.EstimatedDurationMinutes is int mins && mins > 0)
+                end = request.ScheduledStart.Value.AddMinutes(mins);
 
             if (end is not null && end < request.ScheduledStart)
                 throw new BadRequestException("ScheduledEnd no puede ser anterior a ScheduledStart.");

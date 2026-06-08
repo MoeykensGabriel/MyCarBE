@@ -63,17 +63,18 @@ public class WorkOrderService : BaseEntity
     public DateTime? ScheduledStart { get; set; }
 
     /// <summary>
-    /// Fecha de fin estimada. Por defecto se calcula desde ScheduledStart + EstimatedDays,
+    /// Fecha de fin estimada. Por defecto se calcula desde ScheduledStart + EstimatedDurationMinutes,
     /// pero el admin puede ajustarla manualmente si el trabajo se extiende.
     /// </summary>
     public DateTime? ScheduledEnd { get; set; }
 
     /// <summary>
-    /// Cuántos días estima el mecánico que va a durar este trabajo (lo sugiere en su
+    /// Cuántos minutos estima el mecánico que va a durar este trabajo (lo sugiere en su
     /// inspección y se copia al convertir la propuesta). Sirve como default para
     /// calcular ScheduledEnd cuando el admin agenda el inicio.
+    /// Convención: 1 día laboral = 480 min (8 h).
     /// </summary>
-    public int? EstimatedDays { get; set; }
+    public int? EstimatedDurationMinutes { get; set; }
 
     // ── Asignación al mecánico ────────────────────────────────────────────────
     public Guid? AssignedMechanicId { get; set; }

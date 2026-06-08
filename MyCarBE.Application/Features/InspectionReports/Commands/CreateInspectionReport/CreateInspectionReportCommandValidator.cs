@@ -24,7 +24,7 @@ public class CreateInspectionReportCommandValidator : AbstractValidator<CreateIn
             s.RuleFor(p => p.Name).NotEmpty().MaximumLength(200);
             s.RuleFor(p => p.Description).MaximumLength(2000);
             s.RuleFor(p => p.EstimatedLaborCost).GreaterThanOrEqualTo(0);
-            s.RuleFor(p => p.EstimatedDays).GreaterThan(0).When(p => p.EstimatedDays.HasValue);
+            s.RuleFor(p => p.EstimatedDurationMinutes).GreaterThan(0).When(p => p.EstimatedDurationMinutes.HasValue);
         });
 
         RuleForEach(x => x.ProposedParts).ChildRules(p =>
@@ -63,8 +63,16 @@ public class CreateInspectionReportCommandValidator : AbstractValidator<CreateIn
         {
             RuleFor(x => x.Battery!.Status).IsInEnum();
             RuleFor(x => x.Battery!.Voltage).InclusiveBetween(0, 24).When(x => x.Battery!.Voltage.HasValue);
+            RuleFor(x => x.Battery!.RemainingPercentage).InclusiveBetween(0, 100).When(x => x.Battery!.RemainingPercentage.HasValue);
             RuleFor(x => x.Battery!.Brand).MaximumLength(100);
             RuleFor(x => x.Battery!.Notes).MaximumLength(1000);
+
+            // Specs físicas: positivas cuando se informan; borne dentro del enum.
+            RuleFor(x => x.Battery!.CapacityAh).GreaterThan(0).When(x => x.Battery!.CapacityAh.HasValue);
+            RuleFor(x => x.Battery!.BoxWidthCm).GreaterThan(0).When(x => x.Battery!.BoxWidthCm.HasValue);
+            RuleFor(x => x.Battery!.BoxLengthCm).GreaterThan(0).When(x => x.Battery!.BoxLengthCm.HasValue);
+            RuleFor(x => x.Battery!.BoxHeightCm).GreaterThan(0).When(x => x.Battery!.BoxHeightCm.HasValue);
+            RuleFor(x => x.Battery!.PositiveTerminalSide).IsInEnum().When(x => x.Battery!.PositiveTerminalSide.HasValue);
         });
     }
 }

@@ -80,7 +80,7 @@ public class ConvertInspectionProposalsCommandHandler
                 EstimatedDurationMinutesSnapshot = 0,
                 Quantity                         = 1,
                 ApprovalStatus                   = QuoteItemApprovalStatus.Pending,
-                EstimatedDays                    = proposal.EstimatedDays,
+                EstimatedDurationMinutes         = proposal.EstimatedDurationMinutes,
             });
         }
 

@@ -107,7 +107,7 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
                         Name               = ps.Name.Trim(),
                         Description        = string.IsNullOrWhiteSpace(ps.Description) ? null : ps.Description.Trim(),
                         EstimatedLaborCost = ps.EstimatedLaborCost,
-                        EstimatedDays      = ps.EstimatedDays,
+                        EstimatedDurationMinutes = ps.EstimatedDurationMinutes,
                     });
                 }
             }
@@ -206,14 +206,25 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
                     InstalledOn    = DateOnly.FromDateTime(checkedOn),
                     InstalledAtKm  = workOrder.MileageAtEntry,
                     IsActive       = true,
+                    CapacityAh           = request.Battery.CapacityAh,
+                    BoxWidthCm           = request.Battery.BoxWidthCm,
+                    BoxLengthCm          = request.Battery.BoxLengthCm,
+                    BoxHeightCm          = request.Battery.BoxHeightCm,
+                    PositiveTerminalSide = request.Battery.PositiveTerminalSide,
                 };
                 await _batteryRepository.AddAsync(battery, cancellationToken);
             }
-            else if (!string.IsNullOrWhiteSpace(request.Battery.Brand) && string.IsNullOrWhiteSpace(battery.Brand))
+            else
             {
-                // Completar marca/fabricación si no estaban cargadas y ahora el mecánico las informa.
-                battery.Brand = request.Battery.Brand.Trim();
-                battery.ManufacturedOn ??= request.Battery.ManufacturedOn;
+                // Completar specs si no estaban cargados y ahora el mecánico los informa.
+                if (!string.IsNullOrWhiteSpace(request.Battery.Brand) && string.IsNullOrWhiteSpace(battery.Brand))
+                    battery.Brand = request.Battery.Brand.Trim();
+                battery.ManufacturedOn       ??= request.Battery.ManufacturedOn;
+                battery.CapacityAh           ??= request.Battery.CapacityAh;
+                battery.BoxWidthCm           ??= request.Battery.BoxWidthCm;
+                battery.BoxLengthCm          ??= request.Battery.BoxLengthCm;
+                battery.BoxHeightCm          ??= request.Battery.BoxHeightCm;
+                battery.PositiveTerminalSide ??= request.Battery.PositiveTerminalSide;
             }
 
             battery.Checks.Add(new VehicleBatteryCheck
@@ -224,6 +235,7 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
                 VehicleMileageAtCheck = workOrder.MileageAtEntry,
                 Status                = request.Battery.Status,
                 Voltage               = request.Battery.Voltage,
+                RemainingPercentage   = request.Battery.RemainingPercentage,
                 Notes                 = string.IsNullOrWhiteSpace(request.Battery.Notes) ? null : request.Battery.Notes.Trim(),
                 CheckedByUserId       = checkedByUserId,
                 WorkOrderId           = workOrder.Id,

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyCarBE.Data.Context;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyCarBE.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260607064713_RenameEstimatedDaysToMinutes")]
+    partial class RenameEstimatedDaysToMinutes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1185,21 +1188,9 @@ namespace MyCarBE.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int?>("BoxHeightCm")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("BoxLengthCm")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("BoxWidthCm")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Brand")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("CapacityAh")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
@@ -1221,9 +1212,6 @@ namespace MyCarBE.Data.Migrations
 
                     b.Property<DateOnly?>("ManufacturedOn")
                         .HasColumnType("date");
-
-                    b.Property<int?>("PositiveTerminalSide")
-                        .HasColumnType("integer");
 
                     b.Property<int?>("ReplacedAtKm")
                         .HasColumnType("integer");

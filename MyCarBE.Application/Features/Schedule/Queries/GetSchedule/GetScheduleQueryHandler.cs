@@ -24,7 +24,7 @@ public class GetScheduleQueryHandler : IRequestHandler<GetScheduleQuery, IReadOn
             ServiceName:         s.NameSnapshot,
             ScheduledStart:      s.ScheduledStart!.Value,
             ScheduledEnd:        s.ScheduledEnd!.Value,
-            EstimatedDays:       s.EstimatedDays,
+            EstimatedDurationMinutes: s.EstimatedDurationMinutes,
             AreaId:              s.AreaId,
             AreaName:            s.Area?.Name,
             MechanicId:          s.AssignedMechanicId,

@@ -22,7 +22,7 @@ public class UpdateInspectionReportCommandValidator : AbstractValidator<UpdateIn
             s.RuleFor(p => p.Name).NotEmpty().MaximumLength(200);
             s.RuleFor(p => p.Description).MaximumLength(2000);
             s.RuleFor(p => p.EstimatedLaborCost).GreaterThanOrEqualTo(0);
-            s.RuleFor(p => p.EstimatedDays).GreaterThan(0).When(p => p.EstimatedDays.HasValue);
+            s.RuleFor(p => p.EstimatedDurationMinutes).GreaterThan(0).When(p => p.EstimatedDurationMinutes.HasValue);
         });
 
         RuleForEach(x => x.ProposedParts).ChildRules(p =>

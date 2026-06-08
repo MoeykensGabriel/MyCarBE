@@ -5,5 +5,5 @@ public record InspectionReportProposedServiceDto(
     string  Name,
     string? Description,
     decimal EstimatedLaborCost,
-    int?    EstimatedDays
+    int?    EstimatedDurationMinutes
 );

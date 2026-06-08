@@ -24,6 +24,11 @@ public static class VehicleBatteryDtoFactory
             Id:             battery.Id,
             VehicleId:      battery.VehicleId,
             Brand:          battery.Brand,
+            CapacityAh:           battery.CapacityAh,
+            BoxWidthCm:           battery.BoxWidthCm,
+            BoxLengthCm:          battery.BoxLengthCm,
+            BoxHeightCm:          battery.BoxHeightCm,
+            PositiveTerminalSide: battery.PositiveTerminalSide,
             ManufacturedOn: battery.ManufacturedOn,
             InstalledOn:    battery.InstalledOn,
             InstalledAtKm:  battery.InstalledAtKm,
@@ -32,9 +37,10 @@ public static class VehicleBatteryDtoFactory
             ReplacedAtKm:   battery.ReplacedAtKm,
             CreatedAt:      battery.CreatedAt,
             UpdatedAt:      battery.UpdatedAt,
-            Checks:         checks,
-            CurrentStatus:  last?.Status,
-            LastCheckedOn:  last?.CheckedOn
+            Checks:                     checks,
+            CurrentStatus:              last?.Status,
+            CurrentRemainingPercentage: last?.RemainingPercentage,
+            LastCheckedOn:              last?.CheckedOn
         );
     }
 }

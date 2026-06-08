@@ -10,7 +10,7 @@ public record ScheduleSlotDto(
     string   ServiceName,
     DateTime ScheduledStart,
     DateTime ScheduledEnd,
-    int?     EstimatedDays,
+    int?     EstimatedDurationMinutes,
     Guid?    AreaId,
     string?  AreaName,
     Guid?    MechanicId,

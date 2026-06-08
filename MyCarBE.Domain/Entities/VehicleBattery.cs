@@ -1,4 +1,5 @@
 using MyCarBE.Domain.Common;
+using MyCarBE.Domain.Enums;
 
 namespace MyCarBE.Domain.Entities;
 
@@ -16,6 +17,25 @@ public class VehicleBattery : BaseEntity
 
     /// <summary>Marca de la batería (Bosch, Moura, etc.). Opcional.</summary>
     public string? Brand { get; set; }
+
+    // ─── Specs físicas del repuesto (opcionales) ──────────────────────────────
+    // Identifican qué batería comprar: dos de igual capacidad pueden venir en
+    // cajas o con bornes distintos según el vehículo.
+
+    /// <summary>Capacidad en amperios-hora (Ah). Ej. 75. Opcional.</summary>
+    public int? CapacityAh { get; set; }
+
+    /// <summary>Ancho de la caja en cm (mirando de frente). Opcional.</summary>
+    public int? BoxWidthCm { get; set; }
+
+    /// <summary>Largo / profundidad de la caja en cm. Opcional.</summary>
+    public int? BoxLengthCm { get; set; }
+
+    /// <summary>Alto de la caja en cm. Opcional.</summary>
+    public int? BoxHeightCm { get; set; }
+
+    /// <summary>Lado del borne positivo (+) mirando la batería de frente. Opcional.</summary>
+    public BatteryTerminalSide? PositiveTerminalSide { get; set; }
 
     /// <summary>Fecha de fabricación de la batería, si se conoce. Sirve para estimar antigüedad.</summary>
     public DateOnly? ManufacturedOn { get; set; }

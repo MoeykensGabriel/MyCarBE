@@ -98,8 +98,8 @@ public class WorkOrderServicesController : ControllerBase
 
     /// <summary>
     /// Admin agenda un servicio en el calendario del taller (asigna rango de fechas).
-    /// Si ScheduledEnd es null y el servicio tiene EstimatedDays, se calcula como
-    /// Start + (EstimatedDays-1). Si ambos son null, se borra la programación.
+    /// Si ScheduledEnd es null y el servicio tiene EstimatedDurationMinutes, se calcula como
+    /// Start + duración (en minutos). Si ambos son null, se borra la programación.
     /// </summary>
     [HttpPost("{id:guid}/schedule")]
     [Authorize(Roles = "Admin")]

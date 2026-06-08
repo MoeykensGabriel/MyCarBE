@@ -20,6 +20,7 @@ public class InspectionReportProposedService : BaseEntity
     /// <summary>Mano de obra aproximada estimada por el mecánico.</summary>
     public decimal EstimatedLaborCost { get; set; }
 
-    /// <summary>Días estimados de trabajo (para el calendario de turnos).</summary>
-    public int? EstimatedDays { get; set; }
+    /// <summary>Duración estimada de trabajo en minutos (para el calendario de turnos).
+    /// Convención: 1 día laboral = 480 min (8 h). Permite estimar trabajos de horas.</summary>
+    public int? EstimatedDurationMinutes { get; set; }
 }

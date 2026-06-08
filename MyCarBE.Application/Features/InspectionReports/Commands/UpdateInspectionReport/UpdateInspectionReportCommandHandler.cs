@@ -77,7 +77,7 @@ public class UpdateInspectionReportCommandHandler : IRequestHandler<UpdateInspec
                         Name               = ps.Name.Trim(),
                         Description        = string.IsNullOrWhiteSpace(ps.Description) ? null : ps.Description.Trim(),
                         EstimatedLaborCost = ps.EstimatedLaborCost,
-                        EstimatedDays      = ps.EstimatedDays,
+                        EstimatedDurationMinutes = ps.EstimatedDurationMinutes,
                     });
                 }
             }

@@ -4,13 +4,13 @@ namespace MyCarBE.Application.Features.InspectionReports.Commands;
 
 /// <summary>
 /// Servicio sugerido por el mecánico al cargar/editar su inspección.
-/// EstimatedDays se usa después en el calendario de turnos.
+/// EstimatedDurationMinutes se usa después en el calendario de turnos (1 día = 480 min).
 /// </summary>
 public record ProposedServiceInput(
     string  Name,
     string? Description,
     decimal EstimatedLaborCost,
-    int?    EstimatedDays
+    int?    EstimatedDurationMinutes
 );
 
 /// <summary>
@@ -51,11 +51,18 @@ public record TireInspectionInput(
 /// Estado de la batería cargado por el mecánico del área de batería durante la inspección.
 /// El estado lo define el mecánico (no se calcula). Voltaje, marca y fecha de fabricación
 /// son opcionales. Si la batería todavía no está registrada, se da de alta con estos datos.
+/// Los specs físicos (capacidad, caja, borne) identifican qué repuesto comprar; opcionales.
 /// </summary>
 public record BatteryInspectionInput(
     BatteryStatus Status,
     decimal?      Voltage,
+    int?          RemainingPercentage,
     string?       Brand,
     DateOnly?     ManufacturedOn,
-    string?       Notes
+    string?       Notes,
+    int?                 CapacityAh           = null,
+    int?                 BoxWidthCm           = null,
+    int?                 BoxLengthCm          = null,
+    int?                 BoxHeightCm          = null,
+    BatteryTerminalSide? PositiveTerminalSide = null
 );

@@ -6,7 +6,7 @@ namespace MyCarBE.Application.Features.WorkOrderServices.Commands.ScheduleServic
 /// Agenda un WorkOrderService en el calendario del taller. Lo hace el Admin.
 ///
 /// Comportamiento:
-/// - Si ScheduledEnd es null y EstimatedDays está poblado en el servicio, se calcula como Start + EstimatedDays.
+/// - Si ScheduledEnd es null y EstimatedDurationMinutes está poblado en el servicio, se calcula como Start + duración.
 /// - Si ambos vienen null, se borra la programación.
 /// - ScheduledEnd debe ser >= ScheduledStart.
 /// </summary>
