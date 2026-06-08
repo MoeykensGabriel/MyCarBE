@@ -5,6 +5,7 @@
 **Estado**: Pre-Producción  
 
 **Changelog**:
+- **v1.3** (2026-06-08): Issue abierto "Duraciones de servicios y organización del taller" (ver sección al final): los dos campos de duración (`EstimatedDurationMinutesSnapshot` del catálogo vs `EstimatedDurationMinutes` del mecánico) no se hablan. Preguntas de producto pendientes. Specs de batería (capacidad, caja, borne) agregados a `VehicleBattery`.
 - **v1.1** (2026-05-06): Alineación con código real (sin estado `Approved`, snapshots en `WorkOrderService`). Nueva entidad `Mechanic` y flujo de asignación/aceptación/finalización de servicios por mecánicos. Notas obligatorias al finalizar.
 - **v1.2** (2026-05-23): Aclaraciones de cliente/mecánico:
   - Stock NO maneja precios — es intermediario de disponibilidad. El precio se carga en la cotización (info externa del taller).
@@ -2797,3 +2798,43 @@ Plan de sprint
 #37	S10 — FE Customer: vista read-only — En /my-vehicles/[id], card de solo lectura con estado de cubiertas + estimaciones + aviso de desgaste irregular.	⏸️ Pendiente	#35
 
 ! RECOMENDACION: No hacer esfuerzo exhaustivo por el FE, es importante hacer una arquitectura, plan y desarrollo solido de la funcionalidad primero. Es la prioridad. Y estar con confianza de que no rompe el sistema.
+
+---
+
+## ISSUE ABIERTO — Duraciones de servicios y organización del taller
+
+**Estado:** 🟡 Abierto — pendiente de decisión de producto. NO implementar hasta resolver las preguntas. (Anotado 2026-06-08)
+
+### Contexto
+Ya se migró la duración estimada de **días → minutos** (`EstimatedDays` → `EstimatedDurationMinutes`, 1 jornada = 480 min). Funciona. Pero quedó destapado un tema más profundo: **cómo las duraciones de servicios alimentan la organización del taller.**
+
+### Hallazgo clave: hay DOS duraciones que NO se hablan
+Cada `WorkOrderService` tiene dos campos de duración independientes:
+
+| Campo | Origen | Hoy se usa para… |
+|-------|--------|------------------|
+| `EstimatedDurationMinutesSnapshot` (int, congelado al agregar) | Copiado de `CatalogService.EstimatedDurationMinutes` | **Dashboard "Carga del taller"** (`WorkshopLoadCard`). `DashboardRepository.cs` (~L104): `Sum(EstimatedDurationMinutesSnapshot * Quantity)` → total pendiente + carga por mecánico |
+| `EstimatedDurationMinutes` (nullable) | Lo carga el **mecánico** en la inspección | **Solo** calcular `ScheduledEnd = Start + min` (`ScheduleServiceCommandHandler`). Decide en qué días cae el trabajo en el **Calendario** (`admin/calendar/page.tsx`) |
+
+### El gap
+1. **La estimación del mecánico NO impacta la carga del taller.** El dashboard usa la duración del catálogo. La estimación hands-on (más realista) solo agenda.
+2. **El calendario no muestra duración ni horario** en el chip. Un trabajo de 3 h se ve igual que uno de 2 días.
+3. **`ScheduledEnd` es wall-clock** (`AddMinutes`). "2 jornadas" = 16 h de reloj corridas, no 2 días laborales. La grilla día×área puede no representar bien la ocupación.
+
+### Preguntas abiertas (a resolver luego)
+1. **Fuente de la carga del taller.** ¿El estimado del mecánico debería pisar el snapshot del catálogo para el cálculo de carga (con fallback al catálogo si el mecánico no estimó)? ¿O se mantienen separados?
+2. **Visibilidad en el calendario.** ¿Mostrar duración (ej. "3h" / "2d") y/o horario de inicio en el chip?
+3. **Semántica de `ScheduledEnd`.** ¿Modelar horario de taller (apertura/cierre) para que "2 jornadas" ocupe 2 días laborales en la grilla, en vez de 16 h corridas?
+4. **¿Una sola duración o dos?** ¿Unificar (mecánico override catálogo) o mantener catálogo = default + mecánico = ajuste fino y mostrar ambas?
+
+### Archivos relevantes (para cuando se retome)
+- Backend: `Data/Repositories/DashboardRepository.cs` (~L104); `Application/Features/WorkOrderServices/Commands/ScheduleService/ScheduleServiceCommandHandler.cs`; `Domain/Entities/WorkOrderService.cs`; `Data/Configurations/WorkOrderServiceConfiguration.cs` (snapshot frozen).
+- Frontend: `src/components/dashboard/WorkshopLoadCard.tsx`; `src/app/(admin)/admin/calendar/page.tsx` (`SlotChip`); `src/lib/format.ts` (`formatEstimatedDuration` cliente / `formatWorkDuration` interno).
+
+### Plan tentativo (depende de las respuestas)
+| # | Tarea | Estado | Dep |
+|---|-------|--------|-----|
+| D1 | Decidir las 4 preguntas de arriba (producto) | ⏸️ Pendiente | — |
+| D2 | (Si aplica) Carga del taller usa estimado del mecánico con fallback a catálogo | ⏸️ Pendiente | D1 |
+| D3 | (Si aplica) Mostrar duración/horario en el chip del calendario | ⏸️ Pendiente | D1 |
+| D4 | (Si aplica) Modelar horario de taller para ocupación día×área | ⏸️ Pendiente | D1 |
