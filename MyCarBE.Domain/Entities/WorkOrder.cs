@@ -45,6 +45,15 @@ public class WorkOrder : BaseEntity
     /// </summary>
     public DateTime? QuoteExpiresAt { get; set; }
 
+    /// <summary>
+    /// Agendado del vehículo en el taller (por orden/vehículo). El admin setea ScheduledStart
+    /// cuando el trabajo arranca; ScheduledEnd = inicio + duración total estimada de los servicios.
+    /// Definen el rango en que el vehículo ocupa una bahía física en el calendario de ocupación.
+    /// Nullable: una orden sin agendar no aparece en el calendario.
+    /// </summary>
+    public DateTime? ScheduledStart { get; set; }
+    public DateTime? ScheduledEnd { get; set; }
+
     // Navegación
     public ICollection<WorkOrderService> Services { get; set; } = new List<WorkOrderService>();
     public ICollection<WorkOrderPart> Parts { get; set; } = new List<WorkOrderPart>();
