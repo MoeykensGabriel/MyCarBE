@@ -13,6 +13,11 @@ public class VehicleBatteryConfiguration : IEntityTypeConfiguration<VehicleBatte
 
         builder.Property(b => b.Brand).HasMaxLength(100);
 
+        // Dimensiones de caja en cm — pueden ser decimales (ej. 17.5). numeric(6,2) cubre de sobra.
+        builder.Property(b => b.BoxWidthCm).HasPrecision(6, 2);
+        builder.Property(b => b.BoxLengthCm).HasPrecision(6, 2);
+        builder.Property(b => b.BoxHeightCm).HasPrecision(6, 2);
+
         builder.HasOne(b => b.Vehicle)
                .WithMany(v => v.Batteries)
                .HasForeignKey(b => b.VehicleId)

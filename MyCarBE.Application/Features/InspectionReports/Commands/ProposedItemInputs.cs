@@ -61,8 +61,8 @@ public record BatteryInspectionInput(
     DateOnly?     InstalledOn,
     string?       Notes,
     int?                 CapacityAh           = null,
-    int?                 BoxWidthCm           = null,
-    int?                 BoxLengthCm          = null,
-    int?                 BoxHeightCm          = null,
+    decimal?             BoxWidthCm           = null,
+    decimal?             BoxLengthCm          = null,
+    decimal?             BoxHeightCm          = null,
     BatteryTerminalSide? PositiveTerminalSide = null
 );

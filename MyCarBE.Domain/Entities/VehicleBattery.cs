@@ -25,14 +25,14 @@ public class VehicleBattery : BaseEntity
     /// <summary>Capacidad en amperios-hora (Ah). Ej. 75. Opcional.</summary>
     public int? CapacityAh { get; set; }
 
-    /// <summary>Ancho de la caja en cm (mirando de frente). Opcional.</summary>
-    public int? BoxWidthCm { get; set; }
+    /// <summary>Ancho de la caja en cm (mirando de frente). Puede ser decimal (ej. 17.5). Opcional.</summary>
+    public decimal? BoxWidthCm { get; set; }
 
-    /// <summary>Largo / profundidad de la caja en cm. Opcional.</summary>
-    public int? BoxLengthCm { get; set; }
+    /// <summary>Largo / profundidad de la caja en cm. Puede ser decimal. Opcional.</summary>
+    public decimal? BoxLengthCm { get; set; }
 
-    /// <summary>Alto de la caja en cm. Opcional.</summary>
-    public int? BoxHeightCm { get; set; }
+    /// <summary>Alto de la caja en cm. Puede ser decimal. Opcional.</summary>
+    public decimal? BoxHeightCm { get; set; }
 
     /// <summary>Lado del borne positivo (+) mirando la batería de frente. Opcional.</summary>
     public BatteryTerminalSide? PositiveTerminalSide { get; set; }

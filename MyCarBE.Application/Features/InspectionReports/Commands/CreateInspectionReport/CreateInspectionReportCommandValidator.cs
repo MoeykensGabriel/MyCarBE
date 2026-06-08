@@ -69,9 +69,9 @@ public class CreateInspectionReportCommandValidator : AbstractValidator<CreateIn
 
             // Specs físicas: positivas cuando se informan; borne dentro del enum.
             RuleFor(x => x.Battery!.CapacityAh).GreaterThan(0).When(x => x.Battery!.CapacityAh.HasValue);
-            RuleFor(x => x.Battery!.BoxWidthCm).GreaterThan(0).When(x => x.Battery!.BoxWidthCm.HasValue);
-            RuleFor(x => x.Battery!.BoxLengthCm).GreaterThan(0).When(x => x.Battery!.BoxLengthCm.HasValue);
-            RuleFor(x => x.Battery!.BoxHeightCm).GreaterThan(0).When(x => x.Battery!.BoxHeightCm.HasValue);
+            RuleFor(x => x.Battery!.BoxWidthCm).GreaterThan(0m).When(x => x.Battery!.BoxWidthCm.HasValue);
+            RuleFor(x => x.Battery!.BoxLengthCm).GreaterThan(0m).When(x => x.Battery!.BoxLengthCm.HasValue);
+            RuleFor(x => x.Battery!.BoxHeightCm).GreaterThan(0m).When(x => x.Battery!.BoxHeightCm.HasValue);
             RuleFor(x => x.Battery!.PositiveTerminalSide).IsInEnum().When(x => x.Battery!.PositiveTerminalSide.HasValue);
         });
     }
