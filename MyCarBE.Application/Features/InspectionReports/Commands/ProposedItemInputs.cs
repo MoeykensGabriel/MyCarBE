@@ -49,7 +49,7 @@ public record TireInspectionInput(
 
 /// <summary>
 /// Estado de la batería cargado por el mecánico del área de batería durante la inspección.
-/// El estado lo define el mecánico (no se calcula). Voltaje, marca y fecha de fabricación
+/// El estado lo define el mecánico (no se calcula). Voltaje, marca y fecha de instalación
 /// son opcionales. Si la batería todavía no está registrada, se da de alta con estos datos.
 /// Los specs físicos (capacidad, caja, borne) identifican qué repuesto comprar; opcionales.
 /// </summary>
@@ -58,7 +58,7 @@ public record BatteryInspectionInput(
     decimal?      Voltage,
     int?          RemainingPercentage,
     string?       Brand,
-    DateOnly?     ManufacturedOn,
+    DateOnly?     InstalledOn,
     string?       Notes,
     int?                 CapacityAh           = null,
     int?                 BoxWidthCm           = null,

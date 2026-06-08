@@ -29,7 +29,6 @@ public static class VehicleBatteryDtoFactory
             BoxLengthCm:          battery.BoxLengthCm,
             BoxHeightCm:          battery.BoxHeightCm,
             PositiveTerminalSide: battery.PositiveTerminalSide,
-            ManufacturedOn: battery.ManufacturedOn,
             InstalledOn:    battery.InstalledOn,
             InstalledAtKm:  battery.InstalledAtKm,
             IsActive:       battery.IsActive,

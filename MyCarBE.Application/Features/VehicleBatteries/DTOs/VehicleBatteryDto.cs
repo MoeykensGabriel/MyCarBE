@@ -11,7 +11,6 @@ public record VehicleBatteryDto(
     int?                 BoxLengthCm,
     int?                 BoxHeightCm,
     BatteryTerminalSide? PositiveTerminalSide,
-    DateOnly?  ManufacturedOn,
     DateOnly   InstalledOn,
     int        InstalledAtKm,
     bool       IsActive,

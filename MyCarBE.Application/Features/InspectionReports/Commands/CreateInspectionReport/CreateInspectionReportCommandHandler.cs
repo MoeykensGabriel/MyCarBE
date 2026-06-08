@@ -202,8 +202,9 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
                     Id             = Guid.NewGuid(),
                     VehicleId      = workOrder.VehicleId,
                     Brand          = string.IsNullOrWhiteSpace(request.Battery.Brand) ? null : request.Battery.Brand.Trim(),
-                    ManufacturedOn = request.Battery.ManufacturedOn,
-                    InstalledOn    = DateOnly.FromDateTime(checkedOn),
+                    // Fecha de instalación informada por el mecánico (de ahí se calcula la garantía).
+                    // Si no la informa, cae a la fecha de la inspección.
+                    InstalledOn    = request.Battery.InstalledOn ?? DateOnly.FromDateTime(checkedOn),
                     InstalledAtKm  = workOrder.MileageAtEntry,
                     IsActive       = true,
                     CapacityAh           = request.Battery.CapacityAh,
@@ -219,7 +220,6 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
                 // Completar specs si no estaban cargados y ahora el mecánico los informa.
                 if (!string.IsNullOrWhiteSpace(request.Battery.Brand) && string.IsNullOrWhiteSpace(battery.Brand))
                     battery.Brand = request.Battery.Brand.Trim();
-                battery.ManufacturedOn       ??= request.Battery.ManufacturedOn;
                 battery.CapacityAh           ??= request.Battery.CapacityAh;
                 battery.BoxWidthCm           ??= request.Battery.BoxWidthCm;
                 battery.BoxLengthCm          ??= request.Battery.BoxLengthCm;

@@ -37,7 +37,10 @@ public class VehicleBattery : BaseEntity
     /// <summary>Lado del borne positivo (+) mirando la batería de frente. Opcional.</summary>
     public BatteryTerminalSide? PositiveTerminalSide { get; set; }
 
-    /// <summary>Fecha de fabricación de la batería, si se conoce. Sirve para estimar antigüedad.</summary>
+    /// <summary>
+    /// DEPRECADO: ya no se usa. Lo que importa es InstalledOn (de ahí se calcula la garantía).
+    /// Se conserva la columna para no romper datos históricos; no se expone ni se carga más.
+    /// </summary>
     public DateOnly? ManufacturedOn { get; set; }
 
     public DateOnly InstalledOn { get; set; }
