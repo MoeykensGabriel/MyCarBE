@@ -31,3 +31,6 @@ appsettings.Development.json
 
 # Claude
 .claude/
+
+# Archivos subidos en runtime (fotos de ordenes/inspecciones)
+**/wwwroot/uploads/
