@@ -33,5 +33,14 @@ public record WorkOrderDetailDto(
     /// Sirve al FE para emparejar fotos de inspección con fotos del servicio del mismo área.
     /// Para detalle completo del reporte (findings, propuestas) usar el endpoint de InspectionReports.
     /// </summary>
-    IReadOnlyList<WorkOrderInspectionReportLiteDto> InspectionReports
+    IReadOnlyList<WorkOrderInspectionReportLiteDto> InspectionReports,
+    /// <summary>Agendado del vehículo (ocupación de bahía). Null si la orden no está agendada.</summary>
+    DateTime?                          ScheduledStart,
+    DateTime?                          ScheduledEnd,
+    /// <summary>
+    /// Duración total estimada de los servicios activos, en minutos:
+    /// suma de (estimación del mecánico ?? duración del catálogo) * cantidad.
+    /// Sirve para el agendado automático y para mostrar el ETA total.
+    /// </summary>
+    int                                TotalEstimatedMinutes
 );

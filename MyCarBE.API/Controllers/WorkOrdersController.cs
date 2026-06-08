@@ -13,6 +13,7 @@ using MyCarBE.Application.Features.WorkOrders.Commands.CreateWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.DeleteWorkOrderPhoto;
 using MyCarBE.Application.Features.WorkOrders.Commands.RemovePartFromWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.RemoveServiceFromWorkOrder;
+using MyCarBE.Application.Features.WorkOrders.Commands.ScheduleWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.SendQuote;
 using MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderNotes;
 using MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderPart;
@@ -110,6 +111,28 @@ public class WorkOrdersController : ControllerBase
     public async Task<IActionResult> ChangeStatus(
         Guid id,
         [FromBody] ChangeWorkOrderStatusCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (id != command.WorkOrderId)
+            return BadRequest("Route id does not match body workOrderId.");
+
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Agenda la orden (vehículo) en el calendario de ocupación del taller. Si no se pasa
+    /// ScheduledEnd, se calcula como inicio + duración total estimada de los servicios.
+    /// Pasar ambos null borra el agendado. Solo Admin.
+    /// </summary>
+    [HttpPost("{id:guid}/schedule")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Schedule(
+        Guid id,
+        [FromBody] ScheduleWorkOrderCommand command,
         CancellationToken cancellationToken)
     {
         if (id != command.WorkOrderId)

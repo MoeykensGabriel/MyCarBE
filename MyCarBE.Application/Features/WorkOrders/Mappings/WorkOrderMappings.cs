@@ -60,6 +60,11 @@ public class WorkOrderMappings : IRegister
             .Map(dest => dest.Services,  src => src.Services)
             .Map(dest => dest.Parts,     src => src.Parts)
             .Map(dest => dest.Photos,    src => src.Photos)
-            .Map(dest => dest.Timeline,  src => src.StatusChanges);
+            .Map(dest => dest.Timeline,  src => src.StatusChanges)
+            // Duración total estimada: prioriza la estimación del mecánico, fallback al catálogo.
+            // Se mapea en memoria (la entidad ya viene cargada con sus servicios).
+            .Map(dest => dest.TotalEstimatedMinutes, src => src.Services
+                .Where(s => !s.IsDeleted)
+                .Sum(s => (s.EstimatedDurationMinutes ?? s.EstimatedDurationMinutesSnapshot) * s.Quantity));
     }
 }
