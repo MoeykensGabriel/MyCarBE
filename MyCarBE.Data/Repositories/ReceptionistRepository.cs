@@ -29,7 +29,7 @@ public class ReceptionistRepository : Repository<Receptionist>, IReceptionistRep
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.Receptionists.AsQueryable();
+        var query = _context.Receptionists.AsNoTracking().AsQueryable();
 
         if (!includeInactive)
             query = query.Where(r => r.IsActive);

@@ -67,6 +67,7 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
         CancellationToken cancellationToken = default)
     {
         var query = _context.WorkOrderServices
+            .AsNoTracking()
             .Include(s => s.WorkOrder)
                 .ThenInclude(w => w.Vehicle)
             .Where(s => s.AssignedMechanicId == mechanicId);
@@ -86,6 +87,7 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
 
     public async Task<IReadOnlyList<WorkOrderService>> GetAvailableServicesAsync(CancellationToken cancellationToken = default)
         => await _context.WorkOrderServices
+            .AsNoTracking()
             .Include(s => s.WorkOrder)
                 .ThenInclude(w => w.Vehicle)
             .Include(s => s.WorkOrder)
@@ -104,6 +106,7 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
 
     public async Task<IReadOnlyList<WorkOrder>> GetUnderInspectionWithReportsAsync(CancellationToken cancellationToken = default)
         => await _context.WorkOrders
+            .AsNoTracking()
             .Include(w => w.Vehicle)
             .Include(w => w.CustomerAtEntry)
             .Include(w => w.FleetAtEntry)
@@ -115,6 +118,7 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
     public async Task<IReadOnlyList<WorkOrderService>> GetScheduledServicesAsync(
         DateTime from, DateTime to, CancellationToken cancellationToken = default)
         => await _context.WorkOrderServices
+            .AsNoTracking()
             .Include(s => s.WorkOrder)
                 .ThenInclude(w => w.Vehicle)
             .Include(s => s.AssignedMechanic)
@@ -132,6 +136,7 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
         IQueryable<WorkOrder> query, WorkOrderStatus? status, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken)
     {
         query = query
+            .AsNoTracking()
             .Include(w => w.Vehicle)
             .Include(w => w.CustomerAtEntry)
             .Include(w => w.FleetAtEntry);

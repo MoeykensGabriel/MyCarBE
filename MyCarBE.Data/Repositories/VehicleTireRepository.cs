@@ -23,6 +23,7 @@ public class VehicleTireRepository : Repository<VehicleTire>, IVehicleTireReposi
         Guid vehicleId, bool includeReplaced = false, CancellationToken cancellationToken = default)
     {
         var query = _context.VehicleTires
+            .AsNoTracking()
             .Include(t => t.Measurements.OrderBy(m => m.MeasuredOn))
             .Where(t => t.VehicleId == vehicleId);
 

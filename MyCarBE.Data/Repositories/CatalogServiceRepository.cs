@@ -19,11 +19,13 @@ public class CatalogServiceRepository : Repository<CatalogService>, ICatalogServ
 
     public async Task<IReadOnlyList<CatalogService>> GetAllWithInactiveAsync(CancellationToken cancellationToken = default)
         => await _context.CatalogServices
+            .AsNoTracking()
             .OrderBy(c => c.Name)
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<CatalogService>> GetActiveAsync(CancellationToken cancellationToken = default)
         => await _context.CatalogServices
+            .AsNoTracking()
             .Where(c => c.IsActive)
             .OrderBy(c => c.Name)
             .ToListAsync(cancellationToken);

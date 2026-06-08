@@ -20,6 +20,7 @@ public class VehicleBatteryRepository : Repository<VehicleBattery>, IVehicleBatt
         Guid vehicleId, bool includeReplaced = false, CancellationToken cancellationToken = default)
     {
         var query = _context.VehicleBatteries
+            .AsNoTracking()
             .Include(b => b.Checks.OrderBy(c => c.CheckedOn))
             .Where(b => b.VehicleId == vehicleId);
 

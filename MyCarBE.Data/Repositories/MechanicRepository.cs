@@ -42,7 +42,7 @@ public class MechanicRepository : Repository<Mechanic>, IMechanicRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.Mechanics.AsQueryable();
+        var query = _context.Mechanics.AsNoTracking().AsQueryable();
 
         if (!includeInactive)
             query = query.Where(m => m.IsActive);

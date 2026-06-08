@@ -12,6 +12,7 @@ public class VehicleDocumentRepository : Repository<VehicleDocument>, IVehicleDo
 
     public async Task<IReadOnlyList<VehicleDocument>> GetByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
         => await _context.VehicleDocuments
+            .AsNoTracking()
             .Where(d => d.VehicleId == vehicleId)
             .OrderBy(d => d.ExpiresOn)
             .ToListAsync(cancellationToken);

@@ -37,7 +37,7 @@ public class CustomerRepository : Repository<Customer>, ICustomerRepository
     public async Task<PagedResult<Customer>> SearchPagedAsync(
         string? searchTerm, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var query = _context.Customers.AsQueryable();
+        var query = _context.Customers.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {

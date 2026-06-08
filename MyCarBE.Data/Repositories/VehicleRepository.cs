@@ -30,7 +30,7 @@ public class VehicleRepository : Repository<Vehicle>, IVehicleRepository
         string? search, Guid? customerId, Guid? fleetId,
         int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var query = _context.Vehicles.AsQueryable();
+        var query = _context.Vehicles.AsNoTracking().AsQueryable();
 
         // Filtro por dueño
         if (customerId.HasValue)

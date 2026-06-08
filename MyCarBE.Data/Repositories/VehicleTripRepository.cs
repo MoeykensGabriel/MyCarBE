@@ -27,12 +27,14 @@ public class VehicleTripRepository : Repository<VehicleTrip>, IVehicleTripReposi
 
     public async Task<IReadOnlyList<VehicleTrip>> GetTripsByVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
         => await _context.VehicleTrips
+            .AsNoTracking()
             .Where(t => t.VehicleId == vehicleId)
             .OrderByDescending(t => t.StartedAt)
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<VehicleTrip>> GetOpenTripsByFleetAsync(Guid fleetId, CancellationToken cancellationToken = default)
         => await _context.VehicleTrips
+            .AsNoTracking()
             .Include(t => t.Vehicle)
             .Where(t => t.Status == VehicleTripStatus.Open && t.Vehicle.FleetId == fleetId)
             .OrderBy(t => t.StartedAt)
