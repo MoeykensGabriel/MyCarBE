@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyCarBE.Application.Features.Schedule.DTOs;
+using MyCarBE.Application.Features.Schedule.Queries.GetOccupancy;
 using MyCarBE.Application.Features.Schedule.Queries.GetSchedule;
 
 namespace MyCarBE.API.Controllers;
@@ -39,6 +40,31 @@ public class ScheduleController : ControllerBase
             return BadRequest("El rango no puede exceder 92 días.");
 
         var result = await _sender.Send(new GetScheduleQuery(fromDate, toDate), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Ocupación física del taller que intersecta [from, to]: órdenes agendadas (post-aprobación)
+    /// que ocupan bahía, con su estado para marcarlas, más la capacidad configurable.
+    /// Si no se pasan parámetros, usa la semana actual (lunes a domingo).
+    /// </summary>
+    [HttpGet("occupancy")]
+    [ProducesResponseType(typeof(OccupancyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetOccupancy(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        CancellationToken cancellationToken)
+    {
+        var (fromDate, toDate) = ResolveRange(from, to);
+
+        if (toDate < fromDate)
+            return BadRequest("'to' debe ser >= 'from'.");
+
+        if ((toDate - fromDate).TotalDays > 92)
+            return BadRequest("El rango no puede exceder 92 días.");
+
+        var result = await _sender.Send(new GetOccupancyQuery(fromDate, toDate), cancellationToken);
         return Ok(result);
     }
 

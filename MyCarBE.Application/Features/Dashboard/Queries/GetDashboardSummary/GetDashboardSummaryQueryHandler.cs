@@ -56,10 +56,11 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
             .ToList();
 
         var workshopLoad = new WorkshopLoadDto(
-            VehiclesInShop:      data.VehiclesInShop,
-            PhysicalCapacity:    data.PhysicalCapacity,
-            TotalPendingMinutes: data.TotalPendingMinutes,
-            MechanicsLoad:       mechanicsLoad);
+            VehiclesInShop:         data.VehiclesInShop,
+            VehiclesAwaitingPickup: data.VehiclesAwaitingPickup,
+            PhysicalCapacity:       data.PhysicalCapacity,
+            TotalPendingMinutes:    data.TotalPendingMinutes,
+            MechanicsLoad:          mechanicsLoad);
 
         // ── Widgets laterales ────────────────────────────────────────────────
         var now = DateTime.UtcNow;

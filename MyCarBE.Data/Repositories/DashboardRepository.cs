@@ -70,13 +70,12 @@ public class DashboardRepository : IDashboardRepository
             .Take(5)
             .ToListAsync(cancellationToken);
 
-        // Query 3: vehículos físicamente asociados a órdenes activas.
-        // Definimos "activas" como todo menos Delivered y Cancelled.
-        var vehiclesInShop = await _context.WorkOrders
-            .CountAsync(w =>
-                w.CurrentStatus != WorkOrderStatus.Delivered &&
-                w.CurrentStatus != WorkOrderStatus.Cancelled,
-                cancellationToken);
+        // Ocupación física: un vehículo ocupa una bahía SOLO cuando está presente con el
+        // trabajo aprobado (InProgress) o terminado esperando retiro (Completed). La inspección
+        // y la espera de aprobación NO ocupan lugar. Lo derivamos de los agregados por estado
+        // (ya calculados arriba) en vez de una query extra.
+        //   - vehiclesInShop          = InProgress + Completed (bahías ocupadas)
+        //   - vehiclesAwaitingPickup  = Completed (subconjunto: ya sin trabajo activo, esperando retiro)
 
         // Carga por mecánico activo — la armamos en 2 queries simples
         // y combinamos en memoria. La versión con sub-selects dentro del
@@ -274,8 +273,9 @@ public class DashboardRepository : IDashboardRepository
             OrdersThisMonth = aggregates?.OrdersThisMonth ?? 0,
             RevenueToday    = aggregates?.RevenueToday    ?? 0m,
             RevenueThisMonth = aggregates?.RevenueThisMonth ?? 0m,
-            VehiclesInShop      = vehiclesInShop,
-            PhysicalCapacity    = physicalCapacity,
+            VehiclesInShop         = (aggregates?.InProgress ?? 0) + (aggregates?.Completed ?? 0),
+            VehiclesAwaitingPickup = aggregates?.Completed ?? 0,
+            PhysicalCapacity       = physicalCapacity,
             TotalPendingMinutes = totalPendingMinutes,
             MechanicsLoad       = mechanicsLoad,
             ExpiringApprovals   = expiringApprovals,

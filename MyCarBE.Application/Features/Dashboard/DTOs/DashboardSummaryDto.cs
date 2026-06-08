@@ -29,10 +29,13 @@ public record MechanicLoadDto(
 /// "¿tengo capacidad para esto?" sin caminar al taller ni preguntar a nadie.
 /// </summary>
 public record WorkshopLoadDto(
-    /// <summary>Vehículos físicamente asociados a órdenes activas (no Delivered/Cancelled).</summary>
+    /// <summary>Bahías ocupadas: vehículos presentes con trabajo en curso o terminado esperando retiro (InProgress + Completed).</summary>
     int VehiclesInShop,
 
-    /// <summary>Capacidad física del taller (configurable en appsettings).</summary>
+    /// <summary>Subconjunto de VehiclesInShop: vehículos Completed esperando que el cliente los retire (ya sin trabajo activo). El FE los marca distinto.</summary>
+    int VehiclesAwaitingPickup,
+
+    /// <summary>Capacidad física del taller (configurable en datos de la empresa).</summary>
     int PhysicalCapacity,
 
     /// <summary>Total de minutos pendientes de trabajo en todo el taller.</summary>

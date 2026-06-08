@@ -29,7 +29,10 @@ public class DashboardRawData
     public IReadOnlyList<WorkOrder> RecentOrders { get; set; } = [];
 
     // ── Carga del taller (capacidad operativa) ───────────────────────────────
+    /// <summary>Bahías ocupadas: vehículos InProgress + Completed (presentes físicamente).</summary>
     public int VehiclesInShop      { get; set; }
+    /// <summary>Subconjunto de VehiclesInShop: Completed esperando retiro (sin trabajo activo).</summary>
+    public int VehiclesAwaitingPickup { get; set; }
     public int PhysicalCapacity    { get; set; } = 6;
     public int TotalPendingMinutes { get; set; }
     public IReadOnlyList<MechanicLoadRaw> MechanicsLoad { get; set; } = [];

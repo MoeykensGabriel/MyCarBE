@@ -57,4 +57,12 @@ public interface IWorkOrderRepository : IRepository<WorkOrder>
     /// </summary>
     Task<IReadOnlyList<WorkOrderService>> GetScheduledServicesAsync(
         DateTime from, DateTime to, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Órdenes agendadas (ScheduledStart/End) que intersectan [from, to] y ocupan bahía:
+    /// estados post-aprobación (Approved, InProgress, Completed). Incluye Vehicle y dueño.
+    /// Para el calendario de ocupación física por vehículo.
+    /// </summary>
+    Task<IReadOnlyList<WorkOrder>> GetScheduledWorkOrdersAsync(
+        DateTime from, DateTime to, CancellationToken cancellationToken = default);
 }

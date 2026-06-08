@@ -132,6 +132,24 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
             .OrderBy(s => s.ScheduledStart)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<WorkOrder>> GetScheduledWorkOrdersAsync(
+        DateTime from, DateTime to, CancellationToken cancellationToken = default)
+        => await _context.WorkOrders
+            .AsNoTracking()
+            .Include(w => w.Vehicle)
+            .Include(w => w.CustomerAtEntry)
+            .Include(w => w.FleetAtEntry)
+            .Where(w =>
+                w.ScheduledStart != null &&
+                w.ScheduledEnd   != null &&
+                w.ScheduledStart <= to &&
+                w.ScheduledEnd   >= from &&
+                (w.CurrentStatus == WorkOrderStatus.Approved ||
+                 w.CurrentStatus == WorkOrderStatus.InProgress ||
+                 w.CurrentStatus == WorkOrderStatus.Completed))
+            .OrderBy(w => w.ScheduledStart)
+            .ToListAsync(cancellationToken);
+
     private static async Task<PagedResult<WorkOrder>> PagedAsync(
         IQueryable<WorkOrder> query, WorkOrderStatus? status, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken)
     {
