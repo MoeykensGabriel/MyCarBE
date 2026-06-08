@@ -36,10 +36,11 @@ public class VehiclesController : ControllerBase
         [FromQuery] string? search,
         [FromQuery] int     page     = 1,
         [FromQuery] int     pageSize = 20,
+        [FromQuery] string? sort     = null,
         CancellationToken   cancellationToken = default)
     {
         var result = await _sender.Send(
-            new GetVehiclesByOwnerQuery(customerId, fleetId, search, page, pageSize), cancellationToken);
+            new GetVehiclesByOwnerQuery(customerId, fleetId, search, page, pageSize, sort), cancellationToken);
         return Ok(result);
     }
 

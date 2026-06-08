@@ -57,7 +57,7 @@ public class GetVehiclesByOwnerQueryHandler : IRequestHandler<GetVehiclesByOwner
         }
 
         var paged = await _repository.SearchPagedAsync(
-            request.Search, customerId, fleetId, page, pageSize, cancellationToken);
+            request.Search, customerId, fleetId, page, pageSize, request.Sort, cancellationToken);
 
         var items = _mapper.Map<IReadOnlyList<VehicleDto>>(paged.Items);
         return new PagedResult<VehicleDto>(items, paged.TotalCount, paged.Page, paged.PageSize);

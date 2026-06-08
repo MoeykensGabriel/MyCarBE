@@ -14,5 +14,8 @@ public record GetVehiclesByOwnerQuery(
     Guid?  FleetId    = null,
     string? Search    = null,
     int    Page       = 1,
-    int    PageSize   = 20
+    int    PageSize   = 20,
+    // Orden del listado: "alphabetical" (marca/modelo), "plate" (patente), o
+    // "recent" (más nuevo primero, default histórico). Null = "recent".
+    string? Sort      = null
 ) : IRequest<PagedResult<VehicleDto>>;

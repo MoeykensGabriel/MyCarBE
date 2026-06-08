@@ -21,5 +21,5 @@ public interface IVehicleRepository : IRepository<Vehicle>
     /// </summary>
     Task<PagedResult<Vehicle>> SearchPagedAsync(
         string? search, Guid? customerId, Guid? fleetId,
-        int page, int pageSize, CancellationToken cancellationToken = default);
+        int page, int pageSize, string? sort = null, CancellationToken cancellationToken = default);
 }

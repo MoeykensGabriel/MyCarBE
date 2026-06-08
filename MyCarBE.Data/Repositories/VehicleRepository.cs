@@ -28,7 +28,7 @@ public class VehicleRepository : Repository<Vehicle>, IVehicleRepository
 
     public async Task<PagedResult<Vehicle>> SearchPagedAsync(
         string? search, Guid? customerId, Guid? fleetId,
-        int page, int pageSize, CancellationToken cancellationToken = default)
+        int page, int pageSize, string? sort = null, CancellationToken cancellationToken = default)
     {
         var query = _context.Vehicles.AsNoTracking().AsQueryable();
 
@@ -50,8 +50,16 @@ public class VehicleRepository : Repository<Vehicle>, IVehicleRepository
 
         var totalCount = await query.CountAsync(cancellationToken);
 
+        // Orden según el parámetro. Todos terminan con un desempate único (LicensePlate)
+        // para que la paginación sea estable entre páginas.
+        query = sort switch
+        {
+            "alphabetical" => query.OrderBy(v => v.Brand).ThenBy(v => v.Model).ThenBy(v => v.LicensePlate),
+            "plate"        => query.OrderBy(v => v.LicensePlate),
+            _              => query.OrderByDescending(v => v.CreatedAt).ThenBy(v => v.LicensePlate),
+        };
+
         var items = await query
-            .OrderByDescending(v => v.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
