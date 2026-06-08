@@ -24,6 +24,12 @@ public class VehicleBatteryCheck : BaseEntity
     /// <summary>Voltaje en reposo (V), opcional. Ej. 12.6.</summary>
     public decimal? Voltage { get; set; }
 
+    /// <summary>
+    /// Remanencia / vida útil restante de la batería en porcentaje (0–100), medida por el
+    /// mecánico con su tester. Opcional (nullable para chequeos previos a este campo).
+    /// </summary>
+    public int? RemainingPercentage { get; set; }
+
     public string? Notes { get; set; }
 
     /// <summary>Usuario que hizo el chequeo (normalmente el mecánico).</summary>
