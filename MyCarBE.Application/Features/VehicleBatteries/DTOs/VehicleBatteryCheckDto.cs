@@ -9,6 +9,7 @@ public record VehicleBatteryCheckDto(
     int           VehicleMileageAtCheck,
     BatteryStatus Status,
     decimal?      Voltage,
+    int?          RemainingPercentage,
     string?       Notes,
     Guid?         CheckedByUserId,
     Guid?         WorkOrderId,
