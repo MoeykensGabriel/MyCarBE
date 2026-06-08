@@ -5,6 +5,7 @@
 **Estado**: Pre-Producción  
 
 **Changelog**:
+- **v1.4** (2026-06-08): RESUELTO el issue de duraciones/ocupación (sprint S1–S6): agendado por orden/vehículo, ocupación = InProgress + Completed (marcado) vs capacidad configurable, duración = estimación del mecánico (fallback catálogo). Nuevo calendario de ocupación. Batería: la fecha del mecánico ahora es de instalación (no fabricación).
 - **v1.3** (2026-06-08): Issue abierto "Duraciones de servicios y organización del taller" (ver sección al final): los dos campos de duración (`EstimatedDurationMinutesSnapshot` del catálogo vs `EstimatedDurationMinutes` del mecánico) no se hablan. Preguntas de producto pendientes. Specs de batería (capacidad, caja, borne) agregados a `VehicleBattery`.
 - **v1.1** (2026-05-06): Alineación con código real (sin estado `Approved`, snapshots en `WorkOrderService`). Nueva entidad `Mechanic` y flujo de asignación/aceptación/finalización de servicios por mecánicos. Notas obligatorias al finalizar.
 - **v1.2** (2026-05-23): Aclaraciones de cliente/mecánico:
@@ -2801,9 +2802,29 @@ Plan de sprint
 
 ---
 
-## ISSUE ABIERTO — Duraciones de servicios y organización del taller
+## ✅ RESUELTO — Duraciones de servicios y ocupación del taller
 
-**Estado:** 🟡 Abierto — pendiente de decisión de producto. NO implementar hasta resolver las preguntas. (Anotado 2026-06-08)
+**Estado:** 🟢 Resuelto e implementado (2026-06-08, sprint S1–S6).
+
+### Decisiones tomadas
+- **Ocupación física** = vehículos `InProgress` (en trabajo) + `Completed` (esperando retiro). Inspección / esperando aprobación / aprobado-no-presente **NO** ocupan. Los `Completed` se muestran marcados distinto.
+- **Unidad:** por lugares físicos (autos) vs `WorkshopSettings.PhysicalCapacity` (configurable).
+- **Agendado:** por **orden / vehículo**. El admin setea `ScheduledStart`; el fin = inicio + duración total estimada de los servicios = Σ `(EstimatedDurationMinutes del mecánico ?? EstimatedDurationMinutesSnapshot del catálogo) × Quantity`. **Prioriza la estimación del mecánico.**
+
+### Qué se implementó
+- `WorkOrder.ScheduledStart/End` (migración aditiva) — S1.
+- `POST /api/work-orders/{id}/schedule` + `TotalEstimatedMinutes` en `WorkOrderDetailDto` — S2.
+- `vehiclesInShop` corregido (InProgress + Completed) + `VehiclesAwaitingPickup`; nuevo `GET /api/schedule/occupancy` — S3.
+- FE: UI de agendado en el detalle (S4), calendario de ocupación por vehículo/día (S5), `WorkshopLoadCard` actualizado (S6).
+
+### Punto de diseño conocido (aceptado)
+`ScheduledEnd` es wall-clock (`AddMinutes`): "2 jornadas" (960 min) = 16h de reloj corridas, no 2 días laborales. La grilla día×vehículo intersecta el rango por día. Si en el futuro se quiere ocupación por jornada laboral real, habría que modelar horario de taller (apertura/cierre). No bloquea nada hoy.
+
+---
+
+### Contexto histórico (cómo estaba antes)
+
+**Estado original:** 🟡 Abierto — pendiente de decisión de producto. (Anotado 2026-06-08)
 
 ### Contexto
 Ya se migró la duración estimada de **días → minutos** (`EstimatedDays` → `EstimatedDurationMinutes`, 1 jornada = 480 min). Funciona. Pero quedó destapado un tema más profundo: **cómo las duraciones de servicios alimentan la organización del taller.**
