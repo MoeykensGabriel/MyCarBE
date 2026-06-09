@@ -1,6 +1,7 @@
 using MediatR;
 using MyCarBE.Application.Common.Interfaces.Repositories;
 using MyCarBE.Application.Features.Schedule.DTOs;
+using MyCarBE.Domain.Enums;
 
 namespace MyCarBE.Application.Features.Schedule.Queries.GetOccupancy;
 
@@ -37,7 +38,14 @@ public class GetOccupancyQueryHandler : IRequestHandler<GetOccupancyQuery, Occup
             VehicleModel:        w.Vehicle.Model,
             OwnerName:           w.CustomerAtEntry != null
                                     ? $"{w.CustomerAtEntry.FirstName} {w.CustomerAtEntry.LastName}".Trim()
-                                    : w.FleetAtEntry?.CompanyName
+                                    : w.FleetAtEntry?.CompanyName,
+            // Áreas distintas de los servicios vivos (excluye rechazados por el cliente).
+            Areas: w.Services
+                .Where(s => !s.IsDeleted && s.ApprovalStatus != QuoteItemApprovalStatus.Rejected)
+                .Select(s => new { s.AreaId, AreaName = s.Area != null ? s.Area.Name : null })
+                .Distinct()
+                .Select(a => new OccupancyAreaDto(a.AreaId, a.AreaName))
+                .ToList()
         )).ToList();
 
         return new OccupancyDto(settings.PhysicalCapacity, slots);

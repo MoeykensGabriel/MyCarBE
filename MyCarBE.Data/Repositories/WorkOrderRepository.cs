@@ -139,6 +139,9 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
             .Include(w => w.Vehicle)
             .Include(w => w.CustomerAtEntry)
             .Include(w => w.FleetAtEntry)
+            // Servicios (con su área) para agrupar el tablero por servicio/área.
+            .Include(w => w.Services.Where(s => !s.IsDeleted))
+                .ThenInclude(s => s.Area)
             .Where(w =>
                 w.ScheduledStart != null &&
                 w.ScheduledEnd   != null &&
