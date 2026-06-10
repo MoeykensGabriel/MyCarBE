@@ -17,6 +17,7 @@ public class MechanicConfiguration : IEntityTypeConfiguration<Mechanic>
         builder.Property(m => m.Phone).HasMaxLength(30);
         builder.Property(m => m.Specialty).HasMaxLength(200);
         builder.Property(m => m.IsActive).HasDefaultValue(true);
+        builder.Property(m => m.IsGeneralist).HasDefaultValue(false);
 
         builder.HasIndex(m => m.Email).IsUnique();
         builder.HasIndex(m => m.ApplicationUserId).IsUnique();

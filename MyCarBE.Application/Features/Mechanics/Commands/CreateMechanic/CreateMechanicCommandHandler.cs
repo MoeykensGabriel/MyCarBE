@@ -52,6 +52,7 @@ public class CreateMechanicCommandHandler : IRequestHandler<CreateMechanicComman
             Phone             = string.IsNullOrWhiteSpace(request.Phone) ? null : ArgentinaIdentifiers.NormalizePhone(request.Phone),
             Specialty         = string.IsNullOrWhiteSpace(request.Specialty) ? null : request.Specialty.Trim(),
             IsActive          = true,
+            IsGeneralist      = request.IsGeneralist,
             ApplicationUserId = userId,
         };
 

@@ -10,6 +10,7 @@ public record MechanicDto(
     string?            Phone,
     string?            Specialty,
     bool               IsActive,
+    bool               IsGeneralist,
     Guid               ApplicationUserId,
     DateTime           CreatedAt,
     IReadOnlyList<AreaDto> Areas

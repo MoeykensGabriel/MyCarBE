@@ -40,9 +40,23 @@ public class IdentityService : IIdentityService
         if (user is null || !user.IsActive)
             return null;
 
+        // Anti fuerza-bruta: si la cuenta está bloqueada por demasiados intentos
+        // fallidos, rechazamos sin siquiera verificar la contraseña.
+        if (await _userManager.IsLockedOutAsync(user))
+            throw new UnauthorizedException(
+                "Demasiados intentos fallidos. La cuenta quedó bloqueada temporalmente. Probá de nuevo en unos minutos.");
+
         var passwordValid = await _userManager.CheckPasswordAsync(user, password);
         if (!passwordValid)
+        {
+            // Incrementa el contador de fallos; al llegar al máximo, Identity bloquea
+            // la cuenta por el DefaultLockoutTimeSpan configurado en DataLayerExtensions.
+            await _userManager.AccessFailedAsync(user);
             return null;
+        }
+
+        // Login OK → reseteamos el contador de fallos.
+        await _userManager.ResetAccessFailedCountAsync(user);
 
         var roles    = await _userManager.GetRolesAsync(user);
         var role     = roles.FirstOrDefault() ?? string.Empty;

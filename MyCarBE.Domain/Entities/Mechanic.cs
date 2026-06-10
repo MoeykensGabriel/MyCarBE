@@ -21,6 +21,13 @@ public class Mechanic : BaseEntity
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Mecánico generalista: puede reportar/trabajar en TODAS las áreas activas durante la
+    /// inspección, sin que el admin se las asigne una por una. No se modela como área (eso
+    /// la volvería obligatoria en cada cierre de inspección); es una capacidad del mecánico.
+    /// </summary>
+    public bool IsGeneralist { get; set; }
+
     // FK al ApplicationUser — solo el Guid, sin navegación (Domain no depende de Identity)
     public Guid ApplicationUserId { get; set; }
 

@@ -10,6 +10,10 @@ public record PendingInspectionDto(
     DateTime WorkOrderCreatedAt,
     string?  ServiceReason,
 
+    // Km del vehículo registrado al ingreso. Es la línea base del cambio de aceite:
+    // el mecánico no lo edita, se hereda de la orden.
+    int      MileageAtEntry,
+
     // Vehículo (para contexto rápido)
     Guid     VehicleId,
     string   VehicleBrand,
@@ -26,5 +30,6 @@ public record PendingInspectionAreaDto(
     Guid   AreaId,
     string AreaName,
     bool   IsTireArea,
-    bool   IsBatteryArea
+    bool   IsBatteryArea,
+    bool   IsOilArea
 );

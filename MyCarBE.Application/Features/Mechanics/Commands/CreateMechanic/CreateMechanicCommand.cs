@@ -8,5 +8,6 @@ public record CreateMechanicCommand(
     string  LastName,
     string  Email,
     string? Phone,
-    string? Specialty
+    string? Specialty,
+    bool    IsGeneralist = false
 ) : IRequest<CreateMechanicResponseDto>;

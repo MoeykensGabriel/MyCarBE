@@ -26,6 +26,13 @@ public class Area : BaseEntity
     /// </summary>
     public bool IsBatteryArea { get; set; }
 
+    /// <summary>
+    /// Marca el área responsable del control de aceite y filtros. El mecánico de esta área,
+    /// al cargar su reporte de inspección, puede registrar el cambio de aceite (km/fecha base
+    /// + intervalos) de donde sale la estimación del próximo service. Solo una área debería tenerlo.
+    /// </summary>
+    public bool IsOilArea { get; set; }
+
     // Navegación M-a-N — EF Core genera tabla puente automáticamente
     public ICollection<Mechanic> Mechanics { get; set; } = new List<Mechanic>();
 }

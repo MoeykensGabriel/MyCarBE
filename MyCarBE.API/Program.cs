@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -88,6 +89,24 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// Rate limiting — anti fuerza-bruta sobre el login (P0, ver SPEC §Seguridad).
+// Política "login": ventana fija de 1 min, máx 10 intentos por IP. Combinada con
+// el lockout de Identity (5 fallos → cuenta bloqueada 15 min) frena el brute-force.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window      = TimeSpan.FromMinutes(1),
+                QueueLimit  = 0
+            }));
+});
+
 // CORS — permite requests desde el frontend Next.js
 builder.Services.AddCors(options =>
 {
@@ -161,6 +180,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();     // sirve wwwroot/uploads/...
 app.UseCors("FrontendPolicy");  // ← antes de Auth
+app.UseRateLimiter();           // ← anti fuerza-bruta (política "login")
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Features.Auth.Commands.AdminResetPassword;
 using MyCarBE.Application.Features.Auth.Commands.ChangePassword;
@@ -25,9 +26,11 @@ public class AuthController : ControllerBase
     /// Login para Admin y Customer. Retorna un JWT con el rol en los claims.
     /// </summary>
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     [ProducesResponseType(typeof(Application.Features.Auth.DTOs.AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(command, cancellationToken);

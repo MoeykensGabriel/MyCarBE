@@ -33,6 +33,13 @@ public static class DataLayerExtensions
             options.Password.RequireUppercase       = true;
             options.Password.RequireNonAlphanumeric = false;
             options.User.RequireUniqueEmail         = true;
+
+            // Lockout (anti fuerza-bruta): tras N intentos fallidos la cuenta
+            // queda bloqueada temporalmente. El conteo lo lleva IdentityService.LoginAsync
+            // (AccessFailedAsync / ResetAccessFailedCountAsync) — ver P0 en SPEC.
+            options.Lockout.AllowedForNewUsers      = true;
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
         })
         .AddRoles<ApplicationRole>()
         .AddEntityFrameworkStores<AppDbContext>();
@@ -58,6 +65,7 @@ public static class DataLayerExtensions
         services.AddScoped<IVehicleTripRepository,           VehicleTripRepository>();
         services.AddScoped<IVehicleTireRepository,           VehicleTireRepository>();
         services.AddScoped<IVehicleBatteryRepository,        VehicleBatteryRepository>();
+        services.AddScoped<IVehicleOilServiceRepository,     VehicleOilServiceRepository>();
 
         // Identity Services
         services.AddScoped<IJwtTokenService, JwtTokenService>();

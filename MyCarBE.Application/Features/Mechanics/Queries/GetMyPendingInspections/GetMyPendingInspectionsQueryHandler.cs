@@ -11,15 +11,18 @@ public class GetMyPendingInspectionsQueryHandler : IRequestHandler<GetMyPendingI
 {
     private readonly IMechanicRepository  _mechanicRepository;
     private readonly IWorkOrderRepository _workOrderRepository;
+    private readonly IAreaRepository      _areaRepository;
     private readonly ICurrentUserService  _currentUser;
 
     public GetMyPendingInspectionsQueryHandler(
         IMechanicRepository  mechanicRepository,
         IWorkOrderRepository workOrderRepository,
+        IAreaRepository      areaRepository,
         ICurrentUserService  currentUser)
     {
         _mechanicRepository  = mechanicRepository;
         _workOrderRepository = workOrderRepository;
+        _areaRepository      = areaRepository;
         _currentUser         = currentUser;
     }
 
@@ -34,15 +37,19 @@ public class GetMyPendingInspectionsQueryHandler : IRequestHandler<GetMyPendingI
         if (!mechanic.IsActive)
             return Array.Empty<PendingInspectionDto>();
 
-        // Áreas del mecánico (activas; las inactivas se ignoran a propósito)
-        var myAreaIds = mechanic.Areas.Where(a => a.IsActive).Select(a => a.Id).ToHashSet();
+        // Áreas que le tocan al mecánico (activas):
+        // - Generalista: TODAS las áreas activas (puede reportar cualquiera).
+        // - Normal: solo las áreas que tiene asignadas.
+        var relevantAreas = mechanic.IsGeneralist
+            ? (await _areaRepository.GetAllAsync(includeInactive: false, cancellationToken)).ToList()
+            : mechanic.Areas.Where(a => a.IsActive).ToList();
+
+        var myAreaIds = relevantAreas.Select(a => a.Id).ToHashSet();
         if (myAreaIds.Count == 0)
             return Array.Empty<PendingInspectionDto>();
 
-        // Areas también necesita ser un diccionario para resolver el nombre / flag en el DTO
-        var myAreasById = mechanic.Areas
-            .Where(a => a.IsActive)
-            .ToDictionary(a => a.Id, a => a);
+        // Diccionario para resolver el nombre / flags en el DTO
+        var myAreasById = relevantAreas.ToDictionary(a => a.Id, a => a);
 
         var workOrders = await _workOrderRepository.GetUnderInspectionWithReportsAsync(cancellationToken);
 
@@ -59,7 +66,7 @@ public class GetMyPendingInspectionsQueryHandler : IRequestHandler<GetMyPendingI
                 continue;
 
             var pendingAreas = pendingForMe
-                .Select(id => new PendingInspectionAreaDto(id, myAreasById[id].Name, myAreasById[id].IsTireArea, myAreasById[id].IsBatteryArea))
+                .Select(id => new PendingInspectionAreaDto(id, myAreasById[id].Name, myAreasById[id].IsTireArea, myAreasById[id].IsBatteryArea, myAreasById[id].IsOilArea))
                 .OrderBy(a => a.AreaName)
                 .ToList();
 
@@ -72,6 +79,7 @@ public class GetMyPendingInspectionsQueryHandler : IRequestHandler<GetMyPendingI
                 WorkOrderId:         wo.Id,
                 WorkOrderCreatedAt:  wo.CreatedAt,
                 ServiceReason:       wo.ServiceReason,
+                MileageAtEntry:      wo.MileageAtEntry,
                 VehicleId:           wo.Vehicle.Id,
                 VehicleBrand:        wo.Vehicle.Brand,
                 VehicleModel:        wo.Vehicle.Model,

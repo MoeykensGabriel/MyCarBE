@@ -15,6 +15,8 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
     private readonly IWorkOrderRepository        _workOrderRepository;
     private readonly IVehicleTireRepository      _tireRepository;
     private readonly IVehicleBatteryRepository   _batteryRepository;
+    private readonly IVehicleOilServiceRepository _oilRepository;
+    private readonly IAreaRepository             _areaRepository;
     private readonly ICurrentUserService         _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly IMapper                     _mapper;
@@ -25,6 +27,8 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
         IWorkOrderRepository        workOrderRepository,
         IVehicleTireRepository      tireRepository,
         IVehicleBatteryRepository   batteryRepository,
+        IVehicleOilServiceRepository oilRepository,
+        IAreaRepository             areaRepository,
         ICurrentUserService         currentUser,
         IUnitOfWork                 unitOfWork,
         IMapper                     mapper)
@@ -34,6 +38,8 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
         _workOrderRepository = workOrderRepository;
         _tireRepository      = tireRepository;
         _batteryRepository   = batteryRepository;
+        _oilRepository       = oilRepository;
+        _areaRepository      = areaRepository;
         _currentUser         = currentUser;
         _unitOfWork          = unitOfWork;
         _mapper              = mapper;
@@ -51,9 +57,22 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
         if (!mechanic.IsActive)
             throw new ForbiddenException("Mecánico desactivado no puede reportar inspecciones.");
 
-        // Validar que el mecánico esté asignado al área del reporte
-        var area = mechanic.Areas.FirstOrDefault(a => a.Id == request.AreaId)
-            ?? throw new ForbiddenException("No estás asignado al área de este reporte.");
+        // Validar que el mecánico pueda reportar el área:
+        // - Generalista: cualquier área activa (la resolvemos del catálogo de áreas).
+        // - Normal: solo las áreas que tiene asignadas.
+        Domain.Entities.Area area;
+        if (mechanic.IsGeneralist)
+        {
+            area = await _areaRepository.GetByIdAsync(request.AreaId, cancellationToken)
+                ?? throw new NotFoundException(nameof(Domain.Entities.Area), request.AreaId);
+            if (!area.IsActive)
+                throw new BadRequestException("El área del reporte no está activa.");
+        }
+        else
+        {
+            area = mechanic.Areas.FirstOrDefault(a => a.Id == request.AreaId)
+                ?? throw new ForbiddenException("No estás asignado al área de este reporte.");
+        }
 
         // Las cubiertas solo las puede cargar el mecánico del área de cubiertas: es "el que sabe".
         var tires = request.Tires ?? Array.Empty<TireInspectionInput>();
@@ -65,6 +84,11 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
         if (request.Battery is not null && !area.IsBatteryArea)
             throw new BadRequestException(
                 "Solo el reporte del área de batería puede incluir datos de batería.");
+
+        // El cambio de aceite solo lo puede cargar el mecánico del área de aceite.
+        if (request.Oil is not null && !area.IsOilArea)
+            throw new BadRequestException(
+                "Solo el reporte del área de aceite puede incluir datos de cambio de aceite.");
 
         // Validar que la orden exista y esté en fase de inspección
         var workOrder = await _workOrderRepository.GetByIdAsync(request.WorkOrderId, cancellationToken)
@@ -240,6 +264,30 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
                 CheckedByUserId       = checkedByUserId,
                 WorkOrderId           = workOrder.Id,
             });
+        }
+
+        // Cambio de aceite cargado por el mecánico del área de aceite (o un generalista).
+        // Cada cambio es un evento nuevo: registra la línea base (km/fecha) e intervalos, de
+        // donde sale la estimación del próximo service. Un nuevo registro reinicia los contadores.
+        if (request.Oil is not null)
+        {
+            var changedByUserId = _currentUser.UserId == Guid.Empty ? (Guid?)null : _currentUser.UserId;
+
+            await _oilRepository.AddAsync(new VehicleOilService
+            {
+                Id              = Guid.NewGuid(),
+                VehicleId       = workOrder.VehicleId,
+                ChangedOn       = request.Oil.ChangedOn ?? DateOnly.FromDateTime(workOrder.CreatedAt),
+                ChangedAtKm     = request.Oil.ChangedAtKm ?? workOrder.MileageAtEntry,
+                IntervalKm      = request.Oil.IntervalKm ?? 10000,
+                IntervalMonths  = request.Oil.IntervalMonths ?? 6,
+                OilType         = string.IsNullOrWhiteSpace(request.Oil.OilType) ? null : request.Oil.OilType.Trim(),
+                OilBrand        = string.IsNullOrWhiteSpace(request.Oil.OilBrand) ? null : request.Oil.OilBrand.Trim(),
+                FilterChanged   = request.Oil.FilterChanged ?? true,
+                Notes           = string.IsNullOrWhiteSpace(request.Oil.Notes) ? null : request.Oil.Notes.Trim(),
+                ChangedByUserId = changedByUserId,
+                WorkOrderId     = workOrder.Id,
+            }, cancellationToken);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

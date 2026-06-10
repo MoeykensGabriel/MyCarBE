@@ -46,6 +46,7 @@ public class Vehicle : BaseEntity
     public ICollection<VehicleTrip> Trips { get; set; } = new List<VehicleTrip>();
     public ICollection<VehicleTire> Tires { get; set; } = new List<VehicleTire>();
     public ICollection<VehicleBattery> Batteries { get; set; } = new List<VehicleBattery>();
+    public ICollection<VehicleOilService> OilServices { get; set; } = new List<VehicleOilService>();
 
     // -------------------------------------------------------------------------
     // Regla de negocio: XOR de titularidad

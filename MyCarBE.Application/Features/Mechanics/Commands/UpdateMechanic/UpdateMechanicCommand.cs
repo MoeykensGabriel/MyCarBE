@@ -9,5 +9,6 @@ public record UpdateMechanicCommand(
     string  LastName,
     string? Phone,
     string? Specialty,
-    bool    IsActive
+    bool    IsActive,
+    bool    IsGeneralist = false
 ) : IRequest<MechanicDto>;

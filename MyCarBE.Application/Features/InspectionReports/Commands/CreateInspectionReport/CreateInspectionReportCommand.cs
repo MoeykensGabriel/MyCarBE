@@ -23,5 +23,8 @@ public record CreateInspectionReportCommand(
     IReadOnlyList<TireInspectionInput>?  Tires            = null,
     // Solo aplica cuando el área del reporte tiene IsBatteryArea=true (área de batería).
     // El vehículo tiene una sola batería. Si el área no es de batería, debe venir null.
-    BatteryInspectionInput?              Battery          = null
+    BatteryInspectionInput?              Battery          = null,
+    // Solo aplica cuando el área del reporte tiene IsOilArea=true (área de aceite).
+    // Registra un cambio de aceite/filtros. Si el área no es de aceite, debe venir null.
+    OilInspectionInput?                  Oil              = null
 ) : IRequest<InspectionReportDto>;

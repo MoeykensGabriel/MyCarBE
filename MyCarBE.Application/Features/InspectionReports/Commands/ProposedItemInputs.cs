@@ -66,3 +66,20 @@ public record BatteryInspectionInput(
     decimal?             BoxHeightCm          = null,
     BatteryTerminalSide? PositiveTerminalSide = null
 );
+
+/// <summary>
+/// Cambio de aceite y filtros cargado por el mecánico del área de aceite (o un generalista)
+/// durante la inspección. De acá salen los dos contadores del próximo service.
+/// ChangedAtKm/ChangedOn son opcionales: si no se informan, se usan los km de ingreso de la
+/// orden y la fecha de la inspección como línea base. Los intervalos default a 10.000 km / 6 meses.
+/// </summary>
+public record OilInspectionInput(
+    int?      ChangedAtKm    = null,
+    DateOnly? ChangedOn      = null,
+    int?      IntervalKm     = null,
+    int?      IntervalMonths = null,
+    string?   OilType        = null,
+    string?   OilBrand       = null,
+    bool?     FilterChanged  = null,
+    string?   Notes          = null
+);

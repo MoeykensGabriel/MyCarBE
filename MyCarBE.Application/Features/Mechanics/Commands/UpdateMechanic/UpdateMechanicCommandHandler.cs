@@ -34,7 +34,8 @@ public class UpdateMechanicCommandHandler : IRequestHandler<UpdateMechanicComman
         mechanic.LastName  = request.LastName.Trim();
         mechanic.Phone     = string.IsNullOrWhiteSpace(request.Phone) ? null : ArgentinaIdentifiers.NormalizePhone(request.Phone);
         mechanic.Specialty = string.IsNullOrWhiteSpace(request.Specialty) ? null : request.Specialty.Trim();
-        mechanic.IsActive  = request.IsActive;
+        mechanic.IsActive     = request.IsActive;
+        mechanic.IsGeneralist = request.IsGeneralist;
 
         _repository.Update(mechanic);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

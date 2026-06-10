@@ -5,6 +5,7 @@
 **Estado**: Pre-Producción  
 
 **Changelog**:
+- **v1.5** (2026-06-09): **[Seguridad P0] Protección anti fuerza-bruta en el login.** Antes el login no tenía ni rate limiting ni lockout: `CheckPasswordAsync` no incrementaba el contador de fallos, así que se podían probar contraseñas ilimitadamente. Implementado: (1) **lockout de Identity** — 5 intentos fallidos → cuenta bloqueada 15 min (`IdentityService.LoginAsync` ahora usa `AccessFailedAsync`/`IsLockedOutAsync`/`ResetAccessFailedCountAsync`); (2) **rate limiter** built-in de .NET 9 sobre `POST /api/auth/login` — ventana fija de 1 min, máx 10 intentos por IP, responde 429. Ver detalle en §Seguridad → Rate Limiting + Lockout.
 - **v1.4** (2026-06-08): RESUELTO el issue de duraciones/ocupación (sprint S1–S6): agendado por orden/vehículo, ocupación = InProgress + Completed (marcado) vs capacidad configurable, duración = estimación del mecánico (fallback catálogo). Nuevo calendario de ocupación. Batería: la fecha del mecánico ahora es de instalación (no fabricación).
 - **v1.3** (2026-06-08): Issue abierto "Duraciones de servicios y organización del taller" (ver sección al final): los dos campos de duración (`EstimatedDurationMinutesSnapshot` del catálogo vs `EstimatedDurationMinutes` del mecánico) no se hablan. Preguntas de producto pendientes. Specs de batería (capacidad, caja, borne) agregados a `VehicleBattery`.
 - **v1.1** (2026-05-06): Alineación con código real (sin estado `Approved`, snapshots en `WorkOrderService`). Nueva entidad `Mechanic` y flujo de asignación/aceptación/finalización de servicios por mecánicos. Notas obligatorias al finalizar.
@@ -1692,6 +1693,8 @@ THEN
 - ✅ Token expiry: 15-30 minutos
 - ✅ Password hash: AspNet Core Identity (Bcrypt)
 - ✅ Password complexity: min 8 chars, mayús, minús, número, símbolo
+- ✅ **Account lockout: 5 intentos fallidos → 15 min bloqueada** (v1.5)
+- ✅ **Rate limiting en login: 10 req/min por IP → 429** (v1.5)
 
 #### 3. Sensitive Data Exposure
 - ✅ HTTPS requerido en producción (HSTS)
@@ -1760,10 +1763,67 @@ modelBuilder.Entity<WorkOrder>()
 - Bcrypt por defecto
 - Verificación con IPasswordHasher<ApplicationUser>
 
-#### Rate Limiting
-- ⚠️ Pendiente implementación
-- Sugerencia: `AspNetCoreRateLimit` package
-- Limites: 100 requests/minuto por IP
+#### Rate Limiting + Lockout (login) — ✅ Implementado v1.5 (P0)
+
+**Problema original**: el login no tenía ninguna protección anti fuerza-bruta.
+`IdentityService.LoginAsync` usaba `CheckPasswordAsync`, que **no** incrementa el
+contador de fallos de Identity, y no había rate limiter. Resultado: se podían probar
+miles de contraseñas por segundo contra `/api/auth/login` sin freno (la cuenta Admin,
+sembrada al arrancar, era un objetivo conocido).
+
+**Solución — dos capas complementarias:**
+
+1. **Account lockout (Identity)** — `MyCarBE.Data/Extensions/DataLayerExtensions.cs`
+   ```csharp
+   options.Lockout.AllowedForNewUsers      = true;
+   options.Lockout.MaxFailedAccessAttempts = 5;
+   options.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
+   ```
+   `MyCarBE.Data/Services/IdentityService.cs` (`LoginAsync`):
+   - Si `IsLockedOutAsync(user)` → lanza `UnauthorizedException` (401) sin verificar password.
+   - Password inválido → `AccessFailedAsync(user)` (incrementa contador; bloquea al llegar a 5).
+   - Login OK → `ResetAccessFailedCountAsync(user)`.
+
+2. **Rate limiter por IP (built-in .NET 9)** — `MyCarBE.API/Program.cs`
+   - Política `"login"`: `FixedWindowLimiter`, `PermitLimit = 10`, `Window = 1 min`,
+     particionada por `RemoteIpAddress`. Rechazo con `429 Too Many Requests`.
+   - `app.UseRateLimiter()` en el pipeline (tras CORS, antes de Auth).
+   - `[EnableRateLimiting("login")]` sobre `AuthController.Login`.
+
+**Por qué dos capas**: el rate limiter frena la velocidad de ataque desde una IP; el
+lockout protege la cuenta aunque el atacante rote IPs (botnet). No requiere paquetes
+NuGet extra — `System.Threading.RateLimiting` viene con .NET 9.
+
+**Parámetros ajustables**: subir/bajar `MaxFailedAccessAttempts`, `DefaultLockoutTimeSpan`
+y `PermitLimit`/`Window` según tolerancia. Valores actuales son conservadores para un
+taller (poco tráfico de login legítimo).
+
+---
+
+### Pendientes de seguridad (review 2026-06-09)
+
+> Estado general tras el review: la app está sólida. IDOR mitigado (ownership por claims
+> JWT en cada `GetById`), SQL parametrizado (EF), validación con FluentValidation, sin
+> secretos en `NEXT_PUBLIC_*`. **P0 (brute-force login) ya resuelto en v1.5.** Lo que
+> sigue queda como pendiente, en orden de prioridad:
+
+- **⚠️ P1 — Higiene de secretos.** `appsettings.Development.json` (gitignored, **no** está
+  en git) tiene credenciales reales en texto plano: app password de Gmail, password de
+  Postgres, JWT dev key. Acciones: rotar el app password de Gmail, mover los secretos a
+  `dotnet user-secrets`, y asegurar que `JwtSettings:SecretKey` de **producción** sea un
+  valor aleatorio fuerte por variable de entorno (no reutilizar el de dev).
+
+- **⚠️ P2 — JWT en localStorage (FE, `src/lib/axios.ts`).** Un XSS podría robar la sesión.
+  Riesgo bajo hoy (React escapea por defecto, sin `dangerouslySetInnerHTML`, token de
+  60 min). Fix "de verdad" = auth por cookie `HttpOnly` (refactor grande), postergado.
+
+- **⚠️ P3 (menor) — `proxy.ts` del FE** gatea roles leyendo una cookie `role` falsificable.
+  Solo afecta los redirects del lado del cliente: el backend igual valida por el JWT, así
+  que no es escalada de privilegios real. Defensa-en-profundidad floja, baja prioridad.
+
+> **No aplican** (de la tabla genérica de vulnerabilidades SaaS): RLS/Supabase (usamos
+> Postgres+EF con ownership guards), webhooks Stripe (no hay Stripe), debug endpoints/RCE
+> (Swagger solo en Development).
 
 ---
 
