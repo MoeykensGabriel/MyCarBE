@@ -13,6 +13,10 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
 
     public async Task<WorkOrder?> GetWithFullDetailsAsync(Guid id, CancellationToken cancellationToken = default)
         => await _context.WorkOrders
+            // Son 8+ Includes de colecciones: en single query Postgres devuelve el
+            // producto cartesiano de todas (servicios × fotos × reportes × ...).
+            // AsSplitQuery lo parte en una query chica por colección.
+            .AsSplitQuery()
             .Include(w => w.Vehicle)
             .Include(w => w.CustomerAtEntry)
             .Include(w => w.FleetAtEntry)
