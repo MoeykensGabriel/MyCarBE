@@ -2912,10 +2912,15 @@ Cada `WorkOrderService` tiene dos campos de duración independientes:
 - Backend: `Data/Repositories/DashboardRepository.cs` (~L104); `Application/Features/WorkOrderServices/Commands/ScheduleService/ScheduleServiceCommandHandler.cs`; `Domain/Entities/WorkOrderService.cs`; `Data/Configurations/WorkOrderServiceConfiguration.cs` (snapshot frozen).
 - Frontend: `src/components/dashboard/WorkshopLoadCard.tsx`; `src/app/(admin)/admin/calendar/page.tsx` (`SlotChip`); `src/lib/format.ts` (`formatEstimatedDuration` cliente / `formatWorkDuration` interno).
 
-### Plan tentativo (depende de las respuestas)
-| # | Tarea | Estado | Dep |
-|---|-------|--------|-----|
-| D1 | Decidir las 4 preguntas de arriba (producto) | ⏸️ Pendiente | — |
-| D2 | (Si aplica) Carga del taller usa estimado del mecánico con fallback a catálogo | ⏸️ Pendiente | D1 |
-| D3 | (Si aplica) Mostrar duración/horario en el chip del calendario | ⏸️ Pendiente | D1 |
-| D4 | (Si aplica) Modelar horario de taller para ocupación día×área | ⏸️ Pendiente | D1 |
+### Los techos aparecen si esto se convirtiera en SaaS multi-taller o creciera 100x:
+
+Archivos en disco local (wwwroot/uploads) — es el primer bloqueante para correr más de una instancia. Ya está abstraído en IFileStorageService, así que es el swap más barato.
+Búsquedas con ToLower().Contains — full scan de tabla. Invisible hasta ~decenas de miles de filas; después se resuelve con índices pg_trgm sin tocar código de aplicación.
+Soft delete universal — las tablas solo crecen. A largo plazo: índices parciales (WHERE NOT "IsDeleted") o archivado.
+Trabajo síncrono en el request: el email del presupuesto y el PDF se generan inline en SendQuote. A escala real eso va a una cola (Hangfire/background). Igual que QuoteExpirationCleanupService, que con múltiples instancias correría duplicado.
+Rate limiter en memoria — por instancia; con load balancer necesitaría Redis.
+Lo notable es que ninguno de estos techos requiere rediseño: todos están detrás de interfaces o son cambios de infraestructura/DB. Eso es exactamente lo que define un código escalable — no que aguante 1 millón de usuarios hoy, sino que llegar ahí no implique reescribirlo.
+
+Mi única observación arquitectónica de fondo: la lógica de negocio vive casi toda en los handlers (el dominio es bastante anémico — WorkOrder no sabe sus propias transiciones de estado, las sabe el handler). A la escala actual es una decisión razonable y hasta más legible; si el equipo creciera a varios devs tocando las mismas reglas, convendría empujar las invariantes (máquina de estados, totales) hacia las entidades para que sea imposible violarlas desde un handler nuevo.
+
+En resumen: para el negocio que es, sí, y con margen. Y el camino de crecimiento está pavimentado — los cuellos de botella son conocidos, baratos y están todos detrás de abstracciones que ya existen.
