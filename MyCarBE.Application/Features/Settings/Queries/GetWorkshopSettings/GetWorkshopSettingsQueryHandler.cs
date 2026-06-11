@@ -16,6 +16,6 @@ public class GetWorkshopSettingsQueryHandler : IRequestHandler<GetWorkshopSettin
     public async Task<WorkshopSettingsDto> Handle(GetWorkshopSettingsQuery request, CancellationToken cancellationToken)
     {
         var settings = await _repository.GetAsync(cancellationToken);
-        return new WorkshopSettingsDto(settings.PhysicalCapacity);
+        return new WorkshopSettingsDto(settings.PhysicalCapacity, settings.MileageReminderDays);
     }
 }

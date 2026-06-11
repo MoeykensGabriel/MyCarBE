@@ -66,6 +66,7 @@ public static class DataLayerExtensions
         services.AddScoped<IVehicleTireRepository,           VehicleTireRepository>();
         services.AddScoped<IVehicleBatteryRepository,        VehicleBatteryRepository>();
         services.AddScoped<IVehicleOilServiceRepository,     VehicleOilServiceRepository>();
+        services.AddScoped<IVehicleMileageReadingRepository, VehicleMileageReadingRepository>();
 
         // Identity Services
         services.AddScoped<IJwtTokenService, JwtTokenService>();

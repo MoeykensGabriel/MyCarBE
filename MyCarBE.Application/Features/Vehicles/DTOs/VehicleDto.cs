@@ -31,4 +31,18 @@ public record VehicleDto(
     string?         TripToken,
     DateTime        CreatedAt,
     DateTime        UpdatedAt
-);
+)
+{
+    /// <summary>Cuándo se registró la última lectura de km. Null = nunca.</summary>
+    public DateTime? MileageUpdatedAt { get; init; }
+
+    /// <summary>Días desde la última lectura de km. Null = nunca hubo una.</summary>
+    public int? DaysSinceMileageUpdate { get; init; }
+
+    /// <summary>
+    /// True si el vehículo necesita que el cliente actualice el kilometraje
+    /// (pasaron más días que el umbral del taller, o nunca se registró una lectura).
+    /// Lo calcula el handler contra WorkshopSettings.MileageReminderDays.
+    /// </summary>
+    public bool MileageUpdateDue { get; init; }
+}

@@ -16,4 +16,11 @@ public class WorkshopSettings : BaseEntity
     /// Usado en el dashboard para mostrar "X / Y lugares ocupados".
     /// </summary>
     public int PhysicalCapacity { get; set; } = 6;
+
+    /// <summary>
+    /// Cada cuántos días se le recuerda al cliente actualizar el kilometraje
+    /// de sus vehículos. El "vencido" se calcula contra la última lectura
+    /// (de cualquier fuente) — no hay job: si hay lecturas frescas, no molesta.
+    /// </summary>
+    public int MileageReminderDays { get; set; } = 14;
 }

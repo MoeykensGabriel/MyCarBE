@@ -12,5 +12,10 @@ public class UpdateWorkshopSettingsCommandValidator : AbstractValidator<UpdateWo
         RuleFor(x => x.PhysicalCapacity)
             .InclusiveBetween(1, 50)
             .WithMessage("La capacidad debe estar entre 1 y 50 vehículos.");
+
+        // De 1 día a 1 año. Default razonable: 14.
+        RuleFor(x => x.MileageReminderDays)
+            .InclusiveBetween(1, 365)
+            .WithMessage("El recordatorio de kilometraje debe estar entre 1 y 365 días.");
     }
 }

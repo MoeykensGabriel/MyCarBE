@@ -15,7 +15,18 @@ public class Vehicle : BaseEntity
     public VehicleBodyType VehicleBodyType { get; set; }
     public VehicleUseType VehicleUseType { get; set; }
     public string? Color { get; set; }
+
+    /// <summary>
+    /// Última lectura conocida del odómetro. Cache de la VehicleMileageReading
+    /// más reciente — actualizar SIEMPRE vía una lectura nueva, nunca a mano.
+    /// </summary>
     public int CurrentMileage { get; set; }
+
+    /// <summary>
+    /// Cuándo se registró la última lectura de km (de cualquier fuente).
+    /// Null = nunca se registró una lectura → el recordatorio aplica de entrada.
+    /// </summary>
+    public DateTime? MileageUpdatedAt { get; set; }
 
     // Datos del titular según la cédula verde — puede diferir del Customer del sistema
     public string RegistrationHolderFirstName { get; set; } = string.Empty;
@@ -47,6 +58,34 @@ public class Vehicle : BaseEntity
     public ICollection<VehicleTire> Tires { get; set; } = new List<VehicleTire>();
     public ICollection<VehicleBattery> Batteries { get; set; } = new List<VehicleBattery>();
     public ICollection<VehicleOilService> OilServices { get; set; } = new List<VehicleOilService>();
+    public ICollection<VehicleMileageReading> MileageReadings { get; set; } = new List<VehicleMileageReading>();
+
+    /// <summary>
+    /// Registra una lectura nueva del odómetro y actualiza el cache. La fecha del
+    /// recordatorio se renueva siempre (alguien miró el odómetro); el km solo
+    /// avanza, nunca retrocede — la validación de monotonía vive en el handler,
+    /// esto es la última línea de defensa.
+    /// </summary>
+    public VehicleMileageReading AddMileageReading(
+        int mileage, Domain.Enums.MileageReadingSource source, Guid? reportedByUserId, Guid? workOrderId = null)
+    {
+        var reading = new VehicleMileageReading
+        {
+            Id               = Guid.NewGuid(),
+            VehicleId        = Id,
+            Mileage          = mileage,
+            Source           = source,
+            ReportedByUserId = reportedByUserId,
+            WorkOrderId      = workOrderId,
+        };
+        MileageReadings.Add(reading);
+
+        if (mileage >= CurrentMileage)
+            CurrentMileage = mileage;
+        MileageUpdatedAt = DateTime.UtcNow;
+
+        return reading;
+    }
 
     // -------------------------------------------------------------------------
     // Regla de negocio: XOR de titularidad

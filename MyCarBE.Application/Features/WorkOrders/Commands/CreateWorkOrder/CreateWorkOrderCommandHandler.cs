@@ -49,6 +49,16 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
         workOrder.Initialize(_currentUser.UserId);
 
         await _workOrderRepository.AddAsync(workOrder, cancellationToken);
+
+        // El km del ingreso es una lectura real del odómetro (el auto está en el
+        // taller): alimenta la trazabilidad y renueva el recordatorio del cliente.
+        vehicle.AddMileageReading(
+            request.MileageAtEntry,
+            Domain.Enums.MileageReadingSource.WorkshopIntake,
+            _currentUser.UserId == Guid.Empty ? null : _currentUser.UserId,
+            workOrder.Id);
+        _vehicleRepository.Update(vehicle);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return workOrder.Id;

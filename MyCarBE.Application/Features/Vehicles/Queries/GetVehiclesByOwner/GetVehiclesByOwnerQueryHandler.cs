@@ -9,18 +9,21 @@ namespace MyCarBE.Application.Features.Vehicles.Queries.GetVehiclesByOwner;
 
 public class GetVehiclesByOwnerQueryHandler : IRequestHandler<GetVehiclesByOwnerQuery, PagedResult<VehicleDto>>
 {
-    private readonly IVehicleRepository  _repository;
-    private readonly ICurrentUserService _currentUser;
-    private readonly IMapper             _mapper;
+    private readonly IVehicleRepository          _repository;
+    private readonly IWorkshopSettingsRepository _settingsRepository;
+    private readonly ICurrentUserService         _currentUser;
+    private readonly IMapper                     _mapper;
 
     public GetVehiclesByOwnerQueryHandler(
-        IVehicleRepository  repository,
-        ICurrentUserService currentUser,
-        IMapper             mapper)
+        IVehicleRepository          repository,
+        IWorkshopSettingsRepository settingsRepository,
+        ICurrentUserService         currentUser,
+        IMapper                     mapper)
     {
-        _repository  = repository;
-        _currentUser = currentUser;
-        _mapper      = mapper;
+        _repository         = repository;
+        _settingsRepository = settingsRepository;
+        _currentUser        = currentUser;
+        _mapper             = mapper;
     }
 
     public async Task<PagedResult<VehicleDto>> Handle(GetVehiclesByOwnerQuery request, CancellationToken cancellationToken)
@@ -59,7 +62,13 @@ public class GetVehiclesByOwnerQueryHandler : IRequestHandler<GetVehiclesByOwner
         var paged = await _repository.SearchPagedAsync(
             request.Search, customerId, fleetId, page, pageSize, request.Sort, cancellationToken);
 
-        var items = _mapper.Map<IReadOnlyList<VehicleDto>>(paged.Items);
+        // Recordatorio de km: marcar los vehículos con lectura vencida según el umbral del taller.
+        var reminderDays = (await _settingsRepository.GetAsync(cancellationToken)).MileageReminderDays;
+
+        var items = _mapper.Map<IReadOnlyList<VehicleDto>>(paged.Items)
+            .Select(dto => MileageStaleness.Enrich(dto, reminderDays))
+            .ToList();
+
         return new PagedResult<VehicleDto>(items, paged.TotalCount, paged.Page, paged.PageSize);
     }
 }

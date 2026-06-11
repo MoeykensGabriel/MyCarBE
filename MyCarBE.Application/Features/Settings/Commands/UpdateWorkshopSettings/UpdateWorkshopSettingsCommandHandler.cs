@@ -25,11 +25,12 @@ public class UpdateWorkshopSettingsCommandHandler
     {
         var settings = await _repository.GetAsync(cancellationToken);
 
-        settings.PhysicalCapacity = request.PhysicalCapacity;
+        settings.PhysicalCapacity    = request.PhysicalCapacity;
+        settings.MileageReminderDays = request.MileageReminderDays;
 
         _repository.Update(settings);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new WorkshopSettingsDto(settings.PhysicalCapacity);
+        return new WorkshopSettingsDto(settings.PhysicalCapacity, settings.MileageReminderDays);
     }
 }

@@ -9,18 +9,21 @@ namespace MyCarBE.Application.Features.Vehicles.Queries.GetVehicleById;
 
 public class GetVehicleByIdQueryHandler : IRequestHandler<GetVehicleByIdQuery, VehicleDto>
 {
-    private readonly IVehicleRepository  _repository;
-    private readonly ICurrentUserService _currentUser;
-    private readonly IMapper             _mapper;
+    private readonly IVehicleRepository          _repository;
+    private readonly IWorkshopSettingsRepository _settingsRepository;
+    private readonly ICurrentUserService         _currentUser;
+    private readonly IMapper                     _mapper;
 
     public GetVehicleByIdQueryHandler(
-        IVehicleRepository  repository,
-        ICurrentUserService currentUser,
-        IMapper             mapper)
+        IVehicleRepository          repository,
+        IWorkshopSettingsRepository settingsRepository,
+        ICurrentUserService         currentUser,
+        IMapper                     mapper)
     {
-        _repository  = repository;
-        _currentUser = currentUser;
-        _mapper      = mapper;
+        _repository         = repository;
+        _settingsRepository = settingsRepository;
+        _currentUser        = currentUser;
+        _mapper             = mapper;
     }
 
     public async Task<VehicleDto> Handle(GetVehicleByIdQuery request, CancellationToken cancellationToken)
@@ -40,6 +43,7 @@ public class GetVehicleByIdQueryHandler : IRequestHandler<GetVehicleByIdQuery, V
                 throw new NotFoundException(nameof(Domain.Entities.Vehicle), request.Id);
         }
 
-        return _mapper.Map<VehicleDto>(vehicle);
+        var reminderDays = (await _settingsRepository.GetAsync(cancellationToken)).MileageReminderDays;
+        return MileageStaleness.Enrich(_mapper.Map<VehicleDto>(vehicle), reminderDays);
     }
 }

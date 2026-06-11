@@ -7,5 +7,6 @@ namespace MyCarBE.Application.Features.Settings.Commands.UpdateWorkshopSettings;
 /// Actualiza la configuración global del taller. Solo Admin.
 /// </summary>
 public record UpdateWorkshopSettingsCommand(
-    int PhysicalCapacity
+    int PhysicalCapacity,
+    int MileageReminderDays
 ) : IRequest<WorkshopSettingsDto>;

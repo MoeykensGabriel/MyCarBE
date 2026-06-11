@@ -4,5 +4,6 @@ namespace MyCarBE.Application.Features.Settings.DTOs;
 /// Configuración global del taller editable por el admin.
 /// </summary>
 public record WorkshopSettingsDto(
-    int PhysicalCapacity
+    int PhysicalCapacity,
+    int MileageReminderDays
 );
