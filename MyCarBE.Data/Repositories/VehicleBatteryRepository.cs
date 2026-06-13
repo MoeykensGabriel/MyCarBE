@@ -31,4 +31,20 @@ public class VehicleBatteryRepository : Repository<VehicleBattery>, IVehicleBatt
             .OrderByDescending(b => b.InstalledOn)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<VehicleBattery>> GetActiveByOwnerAsync(
+        Guid? customerId, Guid? fleetId, CancellationToken cancellationToken = default)
+    {
+        if (customerId is null && fleetId is null)
+            return Array.Empty<VehicleBattery>();
+
+        return await _context.VehicleBatteries
+            .AsNoTracking()
+            .Include(b => b.Checks)
+            .Include(b => b.Vehicle)
+            .Where(b => b.IsActive &&
+                ((customerId != null && b.Vehicle.CustomerId == customerId) ||
+                 (fleetId    != null && b.Vehicle.FleetId    == fleetId)))
+            .ToListAsync(cancellationToken);
+    }
 }

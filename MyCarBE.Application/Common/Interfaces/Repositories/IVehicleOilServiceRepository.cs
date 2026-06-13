@@ -10,4 +10,12 @@ public interface IVehicleOilServiceRepository : IRepository<VehicleOilService>
     /// </summary>
     Task<VehicleOilService?> GetLatestByVehicleAsync(
         Guid vehicleId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Último cambio de aceite de cada vehículo de un dueño (customer XOR fleet), con el
+    /// vehículo cargado (para el km actual). Una sola query para el resumen de mantenimiento.
+    /// Si ambos ids son null, devuelve vacío.
+    /// </summary>
+    Task<IReadOnlyList<VehicleOilService>> GetLatestByOwnerAsync(
+        Guid? customerId, Guid? fleetId, CancellationToken cancellationToken = default);
 }
