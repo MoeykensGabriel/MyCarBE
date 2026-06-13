@@ -20,4 +20,13 @@ public interface IVehicleTireRepository : IRepository<VehicleTire>
 
     /// <summary>Cubierta por id con sus mediciones cargadas.</summary>
     Task<VehicleTire?> GetByIdWithMeasurementsAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cubiertas activas de todos los vehículos de un dueño (customer XOR fleet), con sus
+    /// mediciones y el vehículo cargados. Una sola query para el resumen de mantenimiento
+    /// del Inicio — evita pedir cubiertas vehículo por vehículo. Si ambos ids son null,
+    /// devuelve vacío.
+    /// </summary>
+    Task<IReadOnlyList<VehicleTire>> GetActiveTiresByOwnerAsync(
+        Guid? customerId, Guid? fleetId, CancellationToken cancellationToken = default);
 }
