@@ -71,7 +71,10 @@ public class Vehicle : BaseEntity
     {
         var reading = new VehicleMileageReading
         {
-            Id               = Guid.NewGuid(),
+            // El Id lo asigna AppDbContext.SaveChangesAsync (patrón de BaseEntity).
+            // Setearlo a mano sobre una clave ValueGeneratedOnAdd hace que EF trate
+            // la lectura como una fila existente y emita UPDATE (0 filas) en vez de
+            // INSERT → DbUpdateConcurrencyException.
             VehicleId        = Id,
             Mileage          = mileage,
             Source           = source,
