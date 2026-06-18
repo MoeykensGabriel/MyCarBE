@@ -130,8 +130,13 @@ public class GetMaintenanceSummaryQueryHandler
     }
 
     // ─── Batería ─────────────────────────────────────────────────────────────────
-    // El estado lo reporta el mecánico (último chequeo). Replace → crítico,
-    // ReplaceSoon → atención. Good/Fair no alertan; sin chequeos, no hay estado.
+    // Dos señales del último chequeo, ambas cargadas por el mecánico: el Status
+    // (juicio) y la Remanencia % (medición con tester). Tomamos la PEOR de las dos,
+    // porque pueden contradecirse (status BUENA con 10% de remanencia, o al revés).
+    //   Status:     Replace → crítico,  ReplaceSoon → atención,  Good/Fair → nada.
+    //   Remanencia: <25% → crítico (rojo en la ficha),  25–49% → atención (naranja),
+    //               ≥50% o sin medición → nada.
+    // Sin chequeos no hay estado → no alerta.
 
     private static IEnumerable<MaintenanceAlertDto> BuildBatteryAlerts(IReadOnlyList<VehicleBattery> batteries)
     {
@@ -142,13 +147,34 @@ public class GetMaintenanceSummaryQueryHandler
                 .FirstOrDefault();
             if (lastCheck is null) continue;
 
-            if (lastCheck.Status is not (BatteryStatus.Replace or BatteryStatus.ReplaceSoon))
-                continue;
+            MaintenanceAlertSeverity? statusSeverity = lastCheck.Status switch
+            {
+                BatteryStatus.Replace     => MaintenanceAlertSeverity.Critical,
+                BatteryStatus.ReplaceSoon => MaintenanceAlertSeverity.Warning,
+                _                         => null,
+            };
 
-            var critical = lastCheck.Status == BatteryStatus.Replace;
-            var detail = critical
-                ? "Batería para reemplazar — no esperes a que falle"
-                : "Cambiá la batería en el próximo service";
+            // null (sin medición) y ≥50 caen en el descarte → no alertan por %.
+            MaintenanceAlertSeverity? pctSeverity = lastCheck.RemainingPercentage switch
+            {
+                < 25 => MaintenanceAlertSeverity.Critical,
+                < 50 => MaintenanceAlertSeverity.Warning,
+                _    => null,
+            };
+
+            if (statusSeverity is null && pctSeverity is null) continue;
+
+            var critical = statusSeverity == MaintenanceAlertSeverity.Critical
+                        || pctSeverity    == MaintenanceAlertSeverity.Critical;
+
+            var pct = lastCheck.RemainingPercentage;
+            string detail = critical
+                ? (pct is < 25
+                    ? $"Batería con {pct}% de vida útil — reemplazá, no esperes a que falle"
+                    : "Batería para reemplazar — no esperes a que falle")
+                : (pct is < 50
+                    ? $"Batería con {pct}% de vida útil — cambiala en el próximo service"
+                    : "Cambiá la batería en el próximo service");
 
             yield return Alert(
                 MaintenanceAlertType.Battery,
