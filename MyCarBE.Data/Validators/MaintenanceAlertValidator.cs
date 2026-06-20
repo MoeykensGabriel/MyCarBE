@@ -1,6 +1,5 @@
 using FluentValidation;
 using MyCarBE.Domain.Entities;
-using MyCarBE.Domain.Enums;
 
 namespace MyCarBE.Data.Validators;
 
@@ -19,22 +18,20 @@ public class MaintenanceAlertValidator : AbstractValidator<MaintenanceAlert>
             .MaximumLength(1000)
             .When(a => !string.IsNullOrWhiteSpace(a.Description));
 
-        // XOR: TimeBased requiere DueDate, MileageBased requiere DueMileage
-        RuleFor(a => a.DueDate)
-            .NotNull().WithMessage("DueDate is required for TimeBased alerts.")
-            .When(a => a.AlertType == AlertType.TimeBased);
+        // Al menos un intervalo (km y/o tiempo) — esto da el comportamiento "como el aceite".
+        RuleFor(a => a)
+            .Must(a => a.IntervalKm.HasValue || a.IntervalMonths.HasValue)
+            .WithMessage("Configurá al menos un intervalo (km o meses).");
 
-        RuleFor(a => a.DueMileage)
-            .Null().WithMessage("DueMileage must be null for TimeBased alerts.")
-            .When(a => a.AlertType == AlertType.TimeBased);
+        RuleFor(a => a.IntervalKm)
+            .GreaterThan(0).WithMessage("IntervalKm debe ser mayor a 0.")
+            .When(a => a.IntervalKm.HasValue);
 
-        RuleFor(a => a.DueMileage)
-            .NotNull().WithMessage("DueMileage is required for MileageBased alerts.")
-            .GreaterThan(0).WithMessage("DueMileage must be greater than 0.")
-            .When(a => a.AlertType == AlertType.MileageBased);
+        RuleFor(a => a.IntervalMonths)
+            .GreaterThan(0).WithMessage("IntervalMonths debe ser mayor a 0.")
+            .When(a => a.IntervalMonths.HasValue);
 
-        RuleFor(a => a.DueDate)
-            .Null().WithMessage("DueDate must be null for MileageBased alerts.")
-            .When(a => a.AlertType == AlertType.MileageBased);
+        RuleFor(a => a.BaselineMileage)
+            .GreaterThanOrEqualTo(0).WithMessage("BaselineMileage no puede ser negativo.");
     }
 }
