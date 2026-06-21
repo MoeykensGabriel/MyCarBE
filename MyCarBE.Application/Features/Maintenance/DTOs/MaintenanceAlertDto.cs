@@ -7,6 +7,7 @@ namespace MyCarBE.Application.Features.Maintenance.DTOs;
 ///   - Detail: frase accionable, ej. "2 cubiertas en estado crítico — cambio inmediato".
 /// </summary>
 public record MaintenanceAlertDto(
+    Guid                     Id,
     MaintenanceAlertType     Type,
     MaintenanceAlertSeverity Severity,
     Guid                     VehicleId,

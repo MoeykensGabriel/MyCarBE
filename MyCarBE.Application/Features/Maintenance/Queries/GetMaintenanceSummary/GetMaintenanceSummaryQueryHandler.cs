@@ -2,54 +2,57 @@ using MediatR;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Interfaces.Repositories;
 using MyCarBE.Application.Features.Maintenance.DTOs;
-using MyCarBE.Application.Features.VehicleOilServices; // OilServiceStatusCalculator
-using MyCarBE.Application.Features.VehicleTires;       // TireWearCalculator
-using MyCarBE.Domain.Entities;
-using MyCarBE.Domain.Enums;
 
 namespace MyCarBE.Application.Features.Maintenance.Queries.GetMaintenanceSummary;
 
 /// <summary>
-/// Junta las alertas de mantenimiento de todos los vehículos del cliente: cubiertas,
-/// aceite y batería. Cada sistema reutiliza su propia regla (la misma que la card del
-/// detalle) y aporta a lo sumo una alerta por vehículo. El dueño sale del JWT.
+/// Junta las alertas de mantenimiento de todos los vehículos del cliente para el Inicio.
+/// Las alertas las configura el recepcionista en el ingreso (intervalo de km y/o tiempo);
+/// acá solo se comparan contra el km y la fecha actuales — sin cálculos complejos. El dueño
+/// sale del JWT. (Las cards de condición de la ficha —cubiertas/batería/aceite— tienen sus
+/// propios endpoints y no dependen de este resumen.)
 /// </summary>
 public class GetMaintenanceSummaryQueryHandler
     : IRequestHandler<GetMaintenanceSummaryQuery, IReadOnlyList<MaintenanceAlertDto>>
 {
-    private readonly IVehicleTireRepository        _tireRepository;
-    private readonly IVehicleOilServiceRepository  _oilRepository;
-    private readonly IVehicleBatteryRepository     _batteryRepository;
-    private readonly ICurrentUserService           _currentUser;
+    private readonly IMaintenanceAlertRepository _alertRepository;
+    private readonly ICurrentUserService         _currentUser;
 
     public GetMaintenanceSummaryQueryHandler(
-        IVehicleTireRepository       tireRepository,
-        IVehicleOilServiceRepository oilRepository,
-        IVehicleBatteryRepository    batteryRepository,
-        ICurrentUserService          currentUser)
+        IMaintenanceAlertRepository alertRepository,
+        ICurrentUserService         currentUser)
     {
-        _tireRepository    = tireRepository;
-        _oilRepository     = oilRepository;
-        _batteryRepository = batteryRepository;
-        _currentUser       = currentUser;
+        _alertRepository = alertRepository;
+        _currentUser     = currentUser;
     }
 
     public async Task<IReadOnlyList<MaintenanceAlertDto>> Handle(
         GetMaintenanceSummaryQuery request, CancellationToken cancellationToken)
     {
         var (customerId, fleetId) = ResolveOwner();
+        var now    = DateTime.UtcNow;
+        var alerts = await _alertRepository.GetActiveByOwnerAsync(customerId, fleetId, cancellationToken);
 
-        var tires      = await _tireRepository.GetActiveTiresByOwnerAsync(customerId, fleetId, cancellationToken);
-        var oils       = await _oilRepository.GetLatestByOwnerAsync(customerId, fleetId, cancellationToken);
-        var batteries  = await _batteryRepository.GetActiveByOwnerAsync(customerId, fleetId, cancellationToken);
+        var result = new List<MaintenanceAlertDto>();
+        foreach (var alert in alerts)
+        {
+            var eval = MaintenanceAlertStatusCalculator.Evaluate(alert, alert.Vehicle.CurrentMileage, now);
+            if (eval.Severity is null) continue; // todavía no vence → no alerta
 
-        var alerts = new List<MaintenanceAlertDto>();
-        alerts.AddRange(BuildTireAlerts(tires));
-        alerts.AddRange(BuildOilAlerts(oils));
-        alerts.AddRange(BuildBatteryAlerts(batteries));
+            result.Add(new MaintenanceAlertDto(
+                Id:           alert.Id,
+                Type:         (MaintenanceAlertType)(int)alert.ItemType,
+                Severity:     eval.Severity.Value,
+                VehicleId:    alert.Vehicle.Id,
+                LicensePlate: alert.Vehicle.LicensePlate,
+                Brand:        alert.Vehicle.Brand,
+                Model:        alert.Vehicle.Model,
+                Title:        alert.Title,
+                Detail:       BuildDetail(eval)));
+        }
 
-        // Críticas primero; desempate estable por patente y sistema.
-        return alerts
+        // Críticas primero; desempate estable por patente y tipo.
+        return result
             .OrderByDescending(a => a.Severity)
             .ThenBy(a => a.LicensePlate)
             .ThenBy(a => a.Type)
@@ -61,140 +64,15 @@ public class GetMaintenanceSummaryQueryHandler
             ? (null, _currentUser.FleetId)
             : (_currentUser.CustomerId, null);
 
-    // ─── Cubiertas ───────────────────────────────────────────────────────────────
-    // Una alerta por vehículo: agrupa sus cubiertas y resume el peor estado.
-    // Attention y Healthy no alertan (no saturar el Inicio).
-
-    private static IEnumerable<MaintenanceAlertDto> BuildTireAlerts(IReadOnlyList<VehicleTire> tires)
+    private static string BuildDetail(MaintenanceAlertStatusCalculator.Evaluation e)
     {
-        foreach (var group in tires.GroupBy(t => t.VehicleId))
-        {
-            var vehicle = group.First().Vehicle;
-            int urgent = 0, replaceSoon = 0, irregular = 0;
+        if (e.Severity == MaintenanceAlertSeverity.Critical)
+            return "Vencido — coordiná el service";
 
-            foreach (var tire in group)
-            {
-                var estimation = TireWearCalculator.Calculate(tire);
-                if      (estimation.Status == TireStatus.Urgent)      urgent++;
-                else if (estimation.Status == TireStatus.ReplaceSoon) replaceSoon++;
-                if (estimation.HasIrregularWear) irregular++;
-            }
+        // Warning: mostramos el contador que esté próximo (km tiene prioridad si aplica).
+        if (e.KmRemaining is <= MaintenanceAlertStatusCalculator.DueSoonKm)
+            return $"Próximo en {Math.Max(0, e.KmRemaining!.Value):N0} km";
 
-            if (urgent == 0 && replaceSoon == 0 && irregular == 0) continue;
-
-            yield return Alert(
-                MaintenanceAlertType.Tire,
-                urgent > 0 ? MaintenanceAlertSeverity.Critical : MaintenanceAlertSeverity.Warning,
-                vehicle,
-                "Cubiertas",
-                BuildTireDetail(urgent, replaceSoon, irregular));
-        }
+        return $"Próximo en {Math.Max(0, e.DaysRemaining ?? 0)} días";
     }
-
-    private static string BuildTireDetail(int urgent, int replaceSoon, int irregular)
-    {
-        if (urgent > 0)
-            return urgent == 1
-                ? "1 cubierta en estado crítico — cambio inmediato"
-                : $"{urgent} cubiertas en estado crítico — cambio inmediato";
-
-        if (replaceSoon > 0)
-            return replaceSoon == 1
-                ? "1 cubierta para cambiar pronto"
-                : $"{replaceSoon} cubiertas para cambiar pronto";
-
-        return irregular == 1
-            ? "Desgaste irregular en 1 cubierta — conviene revisión"
-            : $"Desgaste irregular en {irregular} cubiertas — conviene revisión";
-    }
-
-    // ─── Aceite ──────────────────────────────────────────────────────────────────
-    // Overdue → crítico, DueSoon → atención. Ok no alerta.
-
-    private static IEnumerable<MaintenanceAlertDto> BuildOilAlerts(IReadOnlyList<VehicleOilService> oils)
-    {
-        foreach (var oil in oils)
-        {
-            var eval = OilServiceStatusCalculator.Evaluate(oil, oil.Vehicle.CurrentMileage);
-            if (eval.Status == OilServiceStatus.Ok) continue;
-
-            var (severity, detail) = eval.Status == OilServiceStatus.Overdue
-                ? (MaintenanceAlertSeverity.Critical, "Cambio de aceite vencido")
-                : (MaintenanceAlertSeverity.Warning,
-                   eval.KmRemaining <= OilServiceStatusCalculator.DueSoonKm
-                       ? $"Próximo cambio de aceite en {eval.KmRemaining:N0} km"
-                       : $"Próximo cambio de aceite en {eval.DaysRemaining} días");
-
-            yield return Alert(MaintenanceAlertType.Oil, severity, oil.Vehicle, "Aceite", detail);
-        }
-    }
-
-    // ─── Batería ─────────────────────────────────────────────────────────────────
-    // Dos señales del último chequeo, ambas cargadas por el mecánico: el Status
-    // (juicio) y la Remanencia % (medición con tester). Tomamos la PEOR de las dos,
-    // porque pueden contradecirse (status BUENA con 10% de remanencia, o al revés).
-    //   Status:     Replace → crítico,  ReplaceSoon → atención,  Good/Fair → nada.
-    //   Remanencia: <25% → crítico (rojo en la ficha),  25–49% → atención (naranja),
-    //               ≥50% o sin medición → nada.
-    // Sin chequeos no hay estado → no alerta.
-
-    private static IEnumerable<MaintenanceAlertDto> BuildBatteryAlerts(IReadOnlyList<VehicleBattery> batteries)
-    {
-        foreach (var battery in batteries)
-        {
-            var lastCheck = battery.Checks
-                .OrderByDescending(c => c.CheckedOn)
-                .FirstOrDefault();
-            if (lastCheck is null) continue;
-
-            MaintenanceAlertSeverity? statusSeverity = lastCheck.Status switch
-            {
-                BatteryStatus.Replace     => MaintenanceAlertSeverity.Critical,
-                BatteryStatus.ReplaceSoon => MaintenanceAlertSeverity.Warning,
-                _                         => null,
-            };
-
-            // null (sin medición) y ≥50 caen en el descarte → no alertan por %.
-            MaintenanceAlertSeverity? pctSeverity = lastCheck.RemainingPercentage switch
-            {
-                < 25 => MaintenanceAlertSeverity.Critical,
-                < 50 => MaintenanceAlertSeverity.Warning,
-                _    => null,
-            };
-
-            if (statusSeverity is null && pctSeverity is null) continue;
-
-            var critical = statusSeverity == MaintenanceAlertSeverity.Critical
-                        || pctSeverity    == MaintenanceAlertSeverity.Critical;
-
-            var pct = lastCheck.RemainingPercentage;
-            string detail = critical
-                ? (pct is < 25
-                    ? $"Batería con {pct}% de vida útil — reemplazá, no esperes a que falle"
-                    : "Batería para reemplazar — no esperes a que falle")
-                : (pct is < 50
-                    ? $"Batería con {pct}% de vida útil — cambiala en el próximo service"
-                    : "Cambiá la batería en el próximo service");
-
-            yield return Alert(
-                MaintenanceAlertType.Battery,
-                critical ? MaintenanceAlertSeverity.Critical : MaintenanceAlertSeverity.Warning,
-                battery.Vehicle, "Batería", detail);
-        }
-    }
-
-    // ─── Helper ──────────────────────────────────────────────────────────────────
-
-    private static MaintenanceAlertDto Alert(
-        MaintenanceAlertType type, MaintenanceAlertSeverity severity,
-        Vehicle vehicle, string title, string detail)
-        => new(
-            Type:         type,
-            Severity:     severity,
-            VehicleId:    vehicle.Id,
-            LicensePlate: vehicle.LicensePlate,
-            Brand:        vehicle.Brand,
-            Model:        vehicle.Model,
-            Title:        title,
-            Detail:       detail);
 }
