@@ -278,7 +278,10 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
                 Id              = Guid.NewGuid(),
                 VehicleId       = workOrder.VehicleId,
                 ChangedOn       = request.Oil.ChangedOn ?? DateOnly.FromDateTime(workOrder.CreatedAt),
-                ChangedAtKm     = request.Oil.ChangedAtKm ?? workOrder.MileageAtEntry,
+                // El km del cambio SIEMPRE es el del ingreso: el mecánico no puede poner
+                // más ni menos km que los registrados al ingresar el vehículo. Ignoramos
+                // cualquier ChangedAtKm que venga del cliente (regla de negocio).
+                ChangedAtKm     = workOrder.MileageAtEntry,
                 IntervalKm      = request.Oil.IntervalKm ?? 10000,
                 IntervalMonths  = request.Oil.IntervalMonths ?? 6,
                 OilType         = string.IsNullOrWhiteSpace(request.Oil.OilType) ? null : request.Oil.OilType.Trim(),
