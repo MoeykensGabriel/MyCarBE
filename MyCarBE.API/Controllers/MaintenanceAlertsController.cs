@@ -14,7 +14,7 @@ namespace MyCarBE.API.Controllers;
 /// vía /api/maintenance/summary.
 /// </summary>
 [ApiController]
-[Authorize(Roles = "Admin,Receptionist")]
+[Authorize]
 public class MaintenanceAlertsController : ControllerBase
 {
     private readonly ISender _sender;
@@ -22,15 +22,19 @@ public class MaintenanceAlertsController : ControllerBase
 
     public record SetBody(IReadOnlyList<MaintenanceAlertItemInput> Items);
 
-    /// <summary>Alertas configuradas de un vehículo (con su estado calculado).</summary>
+    /// <summary>
+    /// Alertas configuradas de un vehículo (con su estado calculado). Accesible al dueño
+    /// del vehículo además del taller: el acceso lo resuelve el handler por ownership.
+    /// </summary>
     [HttpGet("api/vehicles/{vehicleId:guid}/maintenance-alerts")]
     [ProducesResponseType(typeof(IReadOnlyList<MaintenanceAlertConfigDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid vehicleId, CancellationToken cancellationToken)
         => Ok(await _sender.Send(new GetVehicleMaintenanceAlertsQuery(vehicleId), cancellationToken));
 
-    /// <summary>Configura (set "replace") las alertas del vehículo.</summary>
+    /// <summary>Configura (set "replace") las alertas del vehículo. Solo taller.</summary>
     [HttpPut("api/vehicles/{vehicleId:guid}/maintenance-alerts")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(IReadOnlyList<MaintenanceAlertConfigDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -41,8 +45,9 @@ public class MaintenanceAlertsController : ControllerBase
                 vehicleId, body.Items ?? Array.Empty<MaintenanceAlertItemInput>()),
             cancellationToken));
 
-    /// <summary>Reinicia el ciclo de una alerta (se hizo el service).</summary>
+    /// <summary>Reinicia el ciclo de una alerta (se hizo el service). Solo taller.</summary>
     [HttpPost("api/vehicles/{vehicleId:guid}/maintenance-alerts/{alertId:guid}/reset")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(MaintenanceAlertConfigDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Reset(
