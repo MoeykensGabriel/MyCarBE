@@ -10,9 +10,6 @@ namespace MyCarBE.Domain.Entities;
 ///
 /// Si ProductCode es null, el repuesto es "custom" (compra suelta del taller, no pasa por el
 /// depósito) y no se envía al Sistema de Stock al aprobar el presupuesto.
-///
-/// AlternativeGroupId permite agrupar opciones alternativas (ej: pastilla Genérica vs Original)
-/// de las cuales el cliente debe elegir exactamente una al aprobar.
 /// </summary>
 public class WorkOrderPart : BaseEntity
 {
@@ -29,35 +26,17 @@ public class WorkOrderPart : BaseEntity
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Costo interno del repuesto para el taller. NO se muestra al cliente en el PDF.
-    /// Sirve para que el admin calcule su margen.
+    /// Precio de venta unitario del repuesto (el que ve y paga el cliente). Lo fija la oficina
+    /// consultándolo con el admin por fuera del sistema. Editable hasta enviar el presupuesto.
     /// </summary>
     public decimal UnitPrice { get; set; }
 
-    /// <summary>
-    /// Precio unitario que ve el cliente en el presupuesto (PDF), con el markup que defina
-    /// el admin. Si es null, se usa <see cref="UnitPrice"/> como fallback (retrocompatible).
-    /// </summary>
-    public decimal? CustomerUnitPrice { get; set; }
-
     public int Quantity { get; set; } = 1;
 
-    /// <summary>Subtotal de costo interno (costo × cantidad). Uso interno del taller.</summary>
+    /// <summary>Subtotal del repuesto (precio × cantidad). Es lo que va al PDF y al total.</summary>
     public decimal Subtotal => UnitPrice * Quantity;
 
-    /// <summary>Precio unitario efectivo de cara al cliente: el markup si existe, si no el costo.</summary>
-    public decimal EffectiveCustomerUnitPrice => CustomerUnitPrice ?? UnitPrice;
-
-    /// <summary>Subtotal de cara al cliente (precio cliente × cantidad). Es lo que va al PDF/total.</summary>
-    public decimal CustomerSubtotal => EffectiveCustomerUnitPrice * Quantity;
-
     public WorkOrderPartTier Tier { get; set; } = WorkOrderPartTier.Generic;
-
-    /// <summary>
-    /// Si tiene valor, este repuesto forma parte de un grupo de alternativas mutuamente excluyentes.
-    /// El cliente debe elegir exactamente uno por grupo al aprobar.
-    /// </summary>
-    public Guid? AlternativeGroupId { get; set; }
 
     public QuoteItemApprovalStatus ApprovalStatus { get; set; } = QuoteItemApprovalStatus.Pending;
 

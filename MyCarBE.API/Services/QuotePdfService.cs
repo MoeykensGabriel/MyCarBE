@@ -172,9 +172,9 @@ public class QuotePdfService : IPdfService
                                 partsTable.Cell().Element(PartCell).AlignCenter().Text(part.Quantity.ToString());
                                 partsTable.Cell().Element(PartCell).Text(part.Name).Bold();
                                 partsTable.Cell().Element(PartCell).AlignRight()
-                                    .Text($"$ {(part.CustomerUnitPrice ?? part.UnitPrice):N0}");
+                                    .Text($"$ {part.UnitPrice:N0}");
                                 partsTable.Cell().Element(PartCell).AlignRight()
-                                    .Text($"$ {part.CustomerSubtotal:N0}").Bold();
+                                    .Text($"$ {part.Subtotal:N0}").Bold();
                             }
                         });
                     }

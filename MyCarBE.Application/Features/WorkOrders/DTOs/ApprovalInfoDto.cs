@@ -22,12 +22,7 @@ public record ApprovalServiceItemDto(
     string? Description,
     decimal UnitPrice,
     int     Quantity,
-    decimal Subtotal,
-    /// <summary>
-    /// Si tiene valor, este item pertenece a un grupo de alternativas mutuamente excluyentes.
-    /// El cliente debe elegir exactamente uno por grupo.
-    /// </summary>
-    Guid?   AlternativeGroupId
+    decimal Subtotal
 );
 
 public record ApprovalPartItemDto(
@@ -37,6 +32,5 @@ public record ApprovalPartItemDto(
     decimal UnitPrice,
     int     Quantity,
     decimal Subtotal,
-    WorkOrderPartTier Tier,
-    Guid?   AlternativeGroupId
+    WorkOrderPartTier Tier
 );

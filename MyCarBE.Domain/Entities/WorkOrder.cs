@@ -177,11 +177,10 @@ public class WorkOrder : BaseEntity
             .Where(s => !s.IsDeleted && s.ApprovalStatus != Enums.QuoteItemApprovalStatus.Rejected)
             .Sum(s => s.PriceSnapshot * s.Quantity);
 
-        // Los repuestos suman al total con el PRECIO DE CLIENTE (markup) — que es lo que ve y
-        // aprueba el cliente en el PDF. Si no hay precio de cliente, cae al costo interno.
+        // Los repuestos suman al total con su precio de venta único (lo que ve y paga el cliente).
         var partsTotal = Parts
             .Where(p => !p.IsDeleted && p.ApprovalStatus != Enums.QuoteItemApprovalStatus.Rejected)
-            .Sum(p => p.CustomerSubtotal);
+            .Sum(p => p.Subtotal);
 
         TotalAmount = servicesTotal + partsTotal;
     }
@@ -193,7 +192,6 @@ public class WorkOrder : BaseEntity
     /// Reglas:
     ///   - El estado actual debe ser AwaitingApproval.
     ///   - Todo ID en las listas tiene que existir como item activo de esta WO.
-    ///   - Cada AlternativeGroupId presente entre los items debe tener EXACTAMENTE 1 aprobado.
     ///   - Tiene que haber al menos 1 item aprobado en total.
     ///   - Items NO incluidos en las listas se marcan Rejected (whitelist approach).
     ///
@@ -223,43 +221,12 @@ public class WorkOrder : BaseEntity
         if (approvedPartSet.Any(id => !validPartIds.Contains(id)))
             throw new InvalidOperationException("Hay repuestos aprobados que no pertenecen a esta orden.");
 
-        // 2) Cada grupo de alternativas: exactamente 1 elegido
-        // Recolectamos por AlternativeGroupId todos los items (services + parts comparten namespace de grupo).
-        var groupsToApproved = new Dictionary<Guid, int>();
-        var groupsToTotal    = new Dictionary<Guid, int>();
-
-        foreach (var s in activeServices)
-        {
-            if (!s.AlternativeGroupId.HasValue) continue;
-            var gid = s.AlternativeGroupId.Value;
-            groupsToTotal[gid]    = groupsToTotal.GetValueOrDefault(gid) + 1;
-            if (approvedSvcSet.Contains(s.Id))
-                groupsToApproved[gid] = groupsToApproved.GetValueOrDefault(gid) + 1;
-        }
-        foreach (var p in activeParts)
-        {
-            if (!p.AlternativeGroupId.HasValue) continue;
-            var gid = p.AlternativeGroupId.Value;
-            groupsToTotal[gid]    = groupsToTotal.GetValueOrDefault(gid) + 1;
-            if (approvedPartSet.Contains(p.Id))
-                groupsToApproved[gid] = groupsToApproved.GetValueOrDefault(gid) + 1;
-        }
-
-        foreach (var (gid, total) in groupsToTotal)
-        {
-            var picked = groupsToApproved.GetValueOrDefault(gid);
-            if (picked != 1)
-                throw new InvalidOperationException(
-                    $"Cada grupo de alternativas requiere exactamente una elección. " +
-                    $"Grupo {gid:N} tiene {total} opciones y {picked} aprobada(s).");
-        }
-
-        // 3) Mínimo 1 item aprobado
+        // 2) Mínimo 1 item aprobado
         if (approvedSvcSet.Count + approvedPartSet.Count == 0)
             throw new InvalidOperationException(
                 "Tenés que aprobar al menos un item del presupuesto. Si no querés realizar el trabajo, contactá al taller.");
 
-        // 4) Aplicar decisión: whitelist approach — todo lo no aprobado queda Rejected
+        // 3) Aplicar decisión: whitelist approach — todo lo no aprobado queda Rejected
         foreach (var s in activeServices)
             s.ApprovalStatus = approvedSvcSet.Contains(s.Id)
                 ? Enums.QuoteItemApprovalStatus.Approved

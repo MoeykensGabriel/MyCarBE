@@ -62,8 +62,6 @@ public class SendQuoteCommandHandler : IRequestHandler<SendQuoteCommand, WorkOrd
             throw new BadRequestException(
                 "El presupuesto debe tener al menos un servicio o repuesto cargado.");
 
-        ValidateAlternativeGroups(activeServices, activeParts);
-
         // ── Cambios atómicos (mismo SaveChanges) ────────────────────────────────
         var now = DateTime.UtcNow;
 
@@ -105,31 +103,6 @@ public class SendQuoteCommandHandler : IRequestHandler<SendQuoteCommand, WorkOrd
         }
 
         return dto;
-    }
-
-    /// <summary>
-    /// Cada grupo de alternativas debe tener al menos 2 items — un grupo de 1 no tiene sentido
-    /// (no hay nada para elegir). Esto rechaza errores de carga del admin antes de mandarle el
-    /// link al cliente.
-    /// </summary>
-    private static void ValidateAlternativeGroups(
-        IReadOnlyList<WorkOrderService> services,
-        IReadOnlyList<WorkOrderPart>    parts)
-    {
-        var groupCounts = new Dictionary<Guid, int>();
-
-        foreach (var s in services)
-            if (s.AlternativeGroupId.HasValue)
-                groupCounts[s.AlternativeGroupId.Value] = groupCounts.GetValueOrDefault(s.AlternativeGroupId.Value) + 1;
-
-        foreach (var p in parts)
-            if (p.AlternativeGroupId.HasValue)
-                groupCounts[p.AlternativeGroupId.Value] = groupCounts.GetValueOrDefault(p.AlternativeGroupId.Value) + 1;
-
-        var brokenGroups = groupCounts.Where(kv => kv.Value < 2).Select(kv => kv.Key).ToList();
-        if (brokenGroups.Count > 0)
-            throw new BadRequestException(
-                "Algunos grupos de alternativas tienen un solo item. Cada grupo debe tener al menos 2 opciones para que el cliente pueda elegir.");
     }
 
     private async Task<string> GenerateApprovalTokenAsync(Guid workOrderId, DateTime now, CancellationToken cancellationToken)

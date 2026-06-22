@@ -17,6 +17,7 @@ using MyCarBE.Application.Features.WorkOrders.Commands.ScheduleWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.SendQuote;
 using MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderNotes;
 using MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderPart;
+using MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderServicePrice;
 using MyCarBE.Application.Features.WorkOrders.Commands.UploadWorkOrderPhoto;
 using MyCarBE.Application.Common.Models;
 using MyCarBE.Application.Features.WorkOrders.DTOs;
@@ -205,6 +206,28 @@ public class WorkOrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Edita el precio de venta de un servicio de la orden (precio único modificable).
+    /// Solo Admin, solo en Diagnosing y si el servicio no está congelado.
+    /// </summary>
+    public record UpdateServicePriceBody(decimal Price);
+
+    [HttpPatch("{id:guid}/services/{serviceId:guid}/price")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateServicePrice(
+        Guid id,
+        Guid serviceId,
+        [FromBody] UpdateServicePriceBody body,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new UpdateWorkOrderServicePriceCommand(id, serviceId, body.Price), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Sube una foto a la orden. Si se pasa workOrderServiceId, la foto queda vinculada
     /// a ese servicio (usado por los mecánicos para documentar el trabajo realizado).
     /// Si no se pasa, es una foto general del vehículo (Before del intake / After de entrega).
@@ -305,7 +328,7 @@ public class WorkOrdersController : ControllerBase
     /// <summary>
     /// Confirma la aprobación del presupuesto item-by-item y avanza la orden a Approved.
     /// El cliente selecciona qué items aprueba; los no incluidos quedan como Rejected.
-    /// Reglas: cada AlternativeGroupId requiere exactamente 1 elección, mínimo 1 item aprobado.
+    /// Regla: mínimo 1 item aprobado.
     /// Enlace de un solo uso, válido 30 días. Público (sin autenticación requerida).
     /// </summary>
     [HttpPost("approve")]

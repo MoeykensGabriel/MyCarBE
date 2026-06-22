@@ -52,15 +52,6 @@ public class ChangeWorkOrderStatusCommandHandler : IRequestHandler<ChangeWorkOrd
             if (workOrder.CurrentStatus == WorkOrderStatus.AwaitingApproval &&
                 (request.NewStatus == WorkOrderStatus.Approved || request.NewStatus == WorkOrderStatus.InProgress))
             {
-                var hasAlternativeGroups =
-                    workOrder.Services.Any(s => !s.IsDeleted && s.AlternativeGroupId.HasValue) ||
-                    workOrder.Parts.Any(p => !p.IsDeleted && p.AlternativeGroupId.HasValue);
-
-                if (hasAlternativeGroups)
-                    throw new BadRequestException(
-                        "El presupuesto tiene alternativas: el cliente debe elegir explícitamente. " +
-                        "Usá el flujo de aprobación del cliente en lugar del cambio de estado directo.");
-
                 var serviceIds = workOrder.Services.Where(s => !s.IsDeleted).Select(s => s.Id);
                 var partIds    = workOrder.Parts.Where(p => !p.IsDeleted).Select(p => p.Id);
                 workOrder.ApplyCustomerApproval(serviceIds, partIds);

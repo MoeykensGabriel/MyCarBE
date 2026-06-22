@@ -44,13 +44,11 @@ public class UpdateWorkOrderPartCommandHandler
             throw new BadRequestException(
                 "Este repuesto fue congelado al enviar el presupuesto y no se puede modificar.");
 
-        part.ProductCode        = string.IsNullOrWhiteSpace(request.ProductCode) ? null : request.ProductCode.Trim();
-        part.Name               = request.Name.Trim();
-        part.UnitPrice          = request.UnitPrice;
-        part.CustomerUnitPrice  = request.CustomerUnitPrice;
-        part.Quantity           = request.Quantity;
-        part.Tier               = request.Tier;
-        part.AlternativeGroupId = request.AlternativeGroupId;
+        part.ProductCode = string.IsNullOrWhiteSpace(request.ProductCode) ? null : request.ProductCode.Trim();
+        part.Name        = request.Name.Trim();
+        part.UnitPrice   = request.UnitPrice;
+        part.Quantity    = request.Quantity;
+        part.Tier        = request.Tier;
 
         workOrder.RecalculateTotalAmount();
 

@@ -29,26 +29,24 @@ public class GetApprovalInfoQueryHandler : IRequestHandler<GetApprovalInfoQuery,
         var services = workOrder.Services
             .Where(s => !s.IsDeleted)
             .Select(s => new ApprovalServiceItemDto(
-                Id:                 s.Id,
-                Name:               s.NameSnapshot,
-                Description:        s.DescriptionSnapshot,
-                UnitPrice:          s.PriceSnapshot,
-                Quantity:           s.Quantity,
-                Subtotal:           s.PriceSnapshot * s.Quantity,
-                AlternativeGroupId: s.AlternativeGroupId))
+                Id:          s.Id,
+                Name:        s.NameSnapshot,
+                Description: s.DescriptionSnapshot,
+                UnitPrice:   s.PriceSnapshot,
+                Quantity:    s.Quantity,
+                Subtotal:    s.PriceSnapshot * s.Quantity))
             .ToList();
 
         var parts = workOrder.Parts
             .Where(p => !p.IsDeleted)
             .Select(p => new ApprovalPartItemDto(
-                Id:                 p.Id,
-                Name:               p.Name,
-                ProductCode:        p.ProductCode,
-                UnitPrice:          p.EffectiveCustomerUnitPrice,
-                Quantity:           p.Quantity,
-                Subtotal:           p.CustomerSubtotal,
-                Tier:               p.Tier,
-                AlternativeGroupId: p.AlternativeGroupId))
+                Id:          p.Id,
+                Name:        p.Name,
+                ProductCode: p.ProductCode,
+                UnitPrice:   p.UnitPrice,
+                Quantity:    p.Quantity,
+                Subtotal:    p.Subtotal,
+                Tier:        p.Tier))
             .ToList();
 
         var customerName =

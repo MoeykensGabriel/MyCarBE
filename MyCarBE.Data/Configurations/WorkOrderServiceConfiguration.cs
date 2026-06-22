@@ -17,11 +17,12 @@ public class WorkOrderServiceConfiguration : IEntityTypeConfiguration<WorkOrderS
         builder.Property(s => s.EstimatedDurationMinutesSnapshot).HasDefaultValue(0);
 
         // Snapshots: se copian al crear y no se propagan cambios del catálogo
+        // Name/Description/Duration son snapshots inmutables (no se propagan cambios del catálogo).
+        // PriceSnapshot SÍ es editable: el admin ajusta el precio de venta del servicio antes de
+        // presupuestar (precio único modificable), por eso NO lleva SetAfterSaveBehavior(Ignore).
         builder.Property(s => s.NameSnapshot).Metadata.SetAfterSaveBehavior(
             Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
         builder.Property(s => s.DescriptionSnapshot).Metadata.SetAfterSaveBehavior(
-            Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
-        builder.Property(s => s.PriceSnapshot).Metadata.SetAfterSaveBehavior(
             Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
         builder.Property(s => s.EstimatedDurationMinutesSnapshot).Metadata.SetAfterSaveBehavior(
             Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
@@ -68,8 +69,6 @@ public class WorkOrderServiceConfiguration : IEntityTypeConfiguration<WorkOrderS
         builder.Property(s => s.ApprovalStatus)
                .HasConversion<int>()
                .HasDefaultValue(Domain.Enums.QuoteItemApprovalStatus.Pending);
-
-        builder.HasIndex(s => s.AlternativeGroupId);
 
         // ── Concurrencia ─────────────────────────────────────────────────────
         // Optimistic concurrency token usando la columna xmin del sistema en

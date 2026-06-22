@@ -44,8 +44,7 @@ public class WorkOrderMappings : IRegister
                     : null);
 
         config.NewConfig<WorkOrderPart, WorkOrderPartDto>()
-            .Map(dest => dest.Subtotal, src => src.UnitPrice * src.Quantity)
-            .Map(dest => dest.CustomerSubtotal, src => src.EffectiveCustomerUnitPrice * src.Quantity);
+            .Map(dest => dest.Subtotal, src => src.UnitPrice * src.Quantity);
 
         config.NewConfig<WorkOrder, WorkOrderDetailDto>()
             .Map(dest => dest.VehicleBrand,        src => src.Vehicle.Brand)

@@ -32,13 +32,6 @@ public class WorkOrderService : BaseEntity
         = QuoteItemApprovalStatus.Pending;
 
     /// <summary>
-    /// Si tiene valor, este servicio forma parte de un grupo de alternativas mutuamente
-    /// excluyentes (mano de obra alternativa: ej "Cambio completo" vs "Reparación parcial").
-    /// El cliente debe elegir exactamente uno por grupo al aprobar.
-    /// </summary>
-    public Guid? AlternativeGroupId { get; set; }
-
-    /// <summary>
     /// Cuando el presupuesto se envía al cliente (S4-05), se setea FrozenAt y los datos del
     /// servicio pasan a ser inmutables hasta que la orden vuelva a Diagnosing.
     /// </summary>

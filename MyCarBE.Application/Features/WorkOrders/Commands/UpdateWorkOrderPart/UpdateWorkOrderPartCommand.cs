@@ -10,8 +10,6 @@ public record UpdateWorkOrderPartCommand(
     string?           ProductCode,
     string            Name,
     decimal           UnitPrice,
-    decimal?          CustomerUnitPrice,
     int               Quantity,
-    WorkOrderPartTier Tier,
-    Guid?             AlternativeGroupId
+    WorkOrderPartTier Tier
 ) : IRequest<WorkOrderDetailDto>;

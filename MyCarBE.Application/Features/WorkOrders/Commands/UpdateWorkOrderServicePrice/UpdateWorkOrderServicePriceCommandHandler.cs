@@ -7,16 +7,16 @@ using MyCarBE.Application.Features.WorkOrders.DTOs;
 using MyCarBE.Domain.Entities;
 using MyCarBE.Domain.Enums;
 
-namespace MyCarBE.Application.Features.WorkOrders.Commands.AddPartToWorkOrder;
+namespace MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderServicePrice;
 
-public class AddPartToWorkOrderCommandHandler
-    : IRequestHandler<AddPartToWorkOrderCommand, WorkOrderDetailDto>
+public class UpdateWorkOrderServicePriceCommandHandler
+    : IRequestHandler<UpdateWorkOrderServicePriceCommand, WorkOrderDetailDto>
 {
     private readonly IWorkOrderRepository _workOrderRepository;
     private readonly IUnitOfWork          _unitOfWork;
     private readonly IMapper              _mapper;
 
-    public AddPartToWorkOrderCommandHandler(
+    public UpdateWorkOrderServicePriceCommandHandler(
         IWorkOrderRepository workOrderRepository,
         IUnitOfWork          unitOfWork,
         IMapper              mapper)
@@ -27,30 +27,25 @@ public class AddPartToWorkOrderCommandHandler
     }
 
     public async Task<WorkOrderDetailDto> Handle(
-        AddPartToWorkOrderCommand request,
+        UpdateWorkOrderServicePriceCommand request,
         CancellationToken cancellationToken)
     {
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
-        // Los repuestos se cargan durante Diagnosing (después de cerrar la inspección colectiva,
-        // antes de enviar el presupuesto al cliente). En cualquier otro estado bloqueamos.
         if (workOrder.CurrentStatus != WorkOrderStatus.Diagnosing)
             throw new BadRequestException(
-                $"Solo se pueden agregar repuestos a una orden en estado 'Diagnosing'. Estado actual: '{workOrder.CurrentStatus}'.");
+                $"Solo se puede editar el precio de servicios en una orden en estado 'Diagnosing'. Estado actual: '{workOrder.CurrentStatus}'.");
 
-        var part = new WorkOrderPart
-        {
-            WorkOrderId    = workOrder.Id,
-            ProductCode    = string.IsNullOrWhiteSpace(request.ProductCode) ? null : request.ProductCode.Trim(),
-            Name           = request.Name.Trim(),
-            UnitPrice      = request.UnitPrice,
-            Quantity       = request.Quantity,
-            Tier           = request.Tier,
-            ApprovalStatus = QuoteItemApprovalStatus.Pending,
-        };
+        var service = workOrder.Services.FirstOrDefault(s => s.Id == request.ServiceId && !s.IsDeleted)
+            ?? throw new NotFoundException(nameof(WorkOrderService), request.ServiceId);
 
-        workOrder.Parts.Add(part);
+        if (service.FrozenAt.HasValue)
+            throw new BadRequestException(
+                "Este servicio fue congelado al enviar el presupuesto y no se puede modificar.");
+
+        service.PriceSnapshot = request.Price;
+
         workOrder.RecalculateTotalAmount();
 
         _workOrderRepository.Update(workOrder);
