@@ -18,5 +18,6 @@ public record MaintenanceAlertConfigDto(
     DateTime                  BaselineDate,
     int?                      KmRemaining,
     int?                      DaysRemaining,
-    MaintenanceAlertSeverity? Severity      // null = todavía no alerta (Ok)
+    MaintenanceAlertSeverity? Severity,     // null = todavía no alerta (Ok)
+    string?                   StatusReason  // motivo cuando la salud medida manda sobre el contador (ej. batería)
 );

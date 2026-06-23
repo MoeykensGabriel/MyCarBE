@@ -19,7 +19,14 @@ public static class MaintenanceAlertStatusCalculator
         int?                      KmRemaining,
         int?                      DaysRemaining);
 
-    public static Evaluation Evaluate(MaintenanceAlert alert, int currentMileage, DateTime now)
+    /// <param name="severityFloor">
+    /// Piso de severidad opcional aportado por una señal externa al temporizador — hoy, la
+    /// salud medida de la batería (lo que el taller vio en la inspección). Solo puede elevar
+    /// la severidad por encima de lo que dicen los contadores de km/tiempo, nunca bajarla.
+    /// </param>
+    public static Evaluation Evaluate(
+        MaintenanceAlert alert, int currentMileage, DateTime now,
+        MaintenanceAlertSeverity? severityFloor = null)
     {
         int? kmRemaining = alert.IntervalKm.HasValue
             ? (alert.BaselineMileage + alert.IntervalKm.Value) - currentMileage
@@ -33,11 +40,23 @@ public static class MaintenanceAlertStatusCalculator
         bool overdue = (kmRemaining is <= 0) || (daysRemaining is <= 0);
         bool dueSoon = (kmRemaining is <= DueSoonKm) || (daysRemaining is <= DueSoonDays);
 
-        MaintenanceAlertSeverity? severity =
+        MaintenanceAlertSeverity? timerSeverity =
             overdue ? MaintenanceAlertSeverity.Critical
             : dueSoon ? MaintenanceAlertSeverity.Warning
             : null;
 
+        // Gana la señal más urgente entre el temporizador y el piso externo.
+        MaintenanceAlertSeverity? severity = MostUrgent(timerSeverity, severityFloor);
+
         return new Evaluation(severity, kmRemaining, daysRemaining);
+    }
+
+    /// <summary>La severidad más urgente de dos (null = sin alerta; Critical &gt; Warning).</summary>
+    private static MaintenanceAlertSeverity? MostUrgent(
+        MaintenanceAlertSeverity? a, MaintenanceAlertSeverity? b)
+    {
+        if (a is null) return b;
+        if (b is null) return a;
+        return (int)a >= (int)b ? a : b;
     }
 }
