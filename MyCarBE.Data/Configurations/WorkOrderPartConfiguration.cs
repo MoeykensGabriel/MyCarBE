@@ -19,10 +19,6 @@ public class WorkOrderPartConfiguration : IEntityTypeConfiguration<WorkOrderPart
         // Propiedad calculada — no se persiste.
         builder.Ignore(p => p.Subtotal);
 
-        builder.Property(p => p.Tier)
-               .HasConversion<int>()
-               .HasDefaultValue(WorkOrderPartTier.Generic);
-
         builder.Property(p => p.ApprovalStatus)
                .HasConversion<int>()
                .HasDefaultValue(QuoteItemApprovalStatus.Pending);

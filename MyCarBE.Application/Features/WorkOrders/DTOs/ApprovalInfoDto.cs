@@ -1,5 +1,3 @@
-using MyCarBE.Domain.Enums;
-
 namespace MyCarBE.Application.Features.WorkOrders.DTOs;
 
 public record ApprovalInfoDto(
@@ -31,6 +29,5 @@ public record ApprovalPartItemDto(
     string? ProductCode,
     decimal UnitPrice,
     int     Quantity,
-    decimal Subtotal,
-    WorkOrderPartTier Tier
+    decimal Subtotal
 );

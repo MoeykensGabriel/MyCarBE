@@ -46,7 +46,6 @@ public class AddPartToWorkOrderCommandHandler
             Name           = request.Name.Trim(),
             UnitPrice      = request.UnitPrice,
             Quantity       = request.Quantity,
-            Tier           = request.Tier,
             ApprovalStatus = QuoteItemApprovalStatus.Pending,
         };
 

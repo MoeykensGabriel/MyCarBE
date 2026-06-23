@@ -45,8 +45,7 @@ public class GetApprovalInfoQueryHandler : IRequestHandler<GetApprovalInfoQuery,
                 ProductCode: p.ProductCode,
                 UnitPrice:   p.UnitPrice,
                 Quantity:    p.Quantity,
-                Subtotal:    p.Subtotal,
-                Tier:        p.Tier))
+                Subtotal:    p.Subtotal))
             .ToList();
 
         var customerName =

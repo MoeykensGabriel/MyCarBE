@@ -23,8 +23,5 @@ public class AddPartToWorkOrderCommandValidator : AbstractValidator<AddPartToWor
 
         RuleFor(x => x.Quantity)
             .InclusiveBetween(1, 9999).WithMessage("La cantidad debe estar entre 1 y 9999.");
-
-        RuleFor(x => x.Tier)
-            .IsInEnum().WithMessage("La categoría del repuesto es inválida.");
     }
 }

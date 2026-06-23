@@ -9,7 +9,6 @@ public record WorkOrderPartDto(
     decimal                 UnitPrice,
     int                     Quantity,
     decimal                 Subtotal,
-    WorkOrderPartTier       Tier,
     QuoteItemApprovalStatus ApprovalStatus,
     DateTime?               FrozenAt,
     DateTime                CreatedAt,

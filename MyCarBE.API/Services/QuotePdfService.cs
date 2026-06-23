@@ -130,8 +130,7 @@ public class QuotePdfService : IPdfService
                     });
 
                     // Tabla de repuestos — resumida: el cliente ve nombre, cantidad y precio,
-                    // pero NO el código de proveedor, el tier ni el costo interno del taller.
-                    // El precio mostrado es el precio de cliente (markup); si no hay, cae al costo.
+                    // pero NO el código de proveedor del taller.
                     if (wo.Parts.Any())
                     {
                         col.Item().PaddingTop(14);

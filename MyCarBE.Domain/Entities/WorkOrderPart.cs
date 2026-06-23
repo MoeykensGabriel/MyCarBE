@@ -36,8 +36,6 @@ public class WorkOrderPart : BaseEntity
     /// <summary>Subtotal del repuesto (precio × cantidad). Es lo que va al PDF y al total.</summary>
     public decimal Subtotal => UnitPrice * Quantity;
 
-    public WorkOrderPartTier Tier { get; set; } = WorkOrderPartTier.Generic;
-
     public QuoteItemApprovalStatus ApprovalStatus { get; set; } = QuoteItemApprovalStatus.Pending;
 
     /// <summary>

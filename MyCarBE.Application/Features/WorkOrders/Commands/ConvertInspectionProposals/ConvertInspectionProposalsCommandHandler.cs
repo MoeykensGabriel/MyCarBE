@@ -93,7 +93,6 @@ public class ConvertInspectionProposalsCommandHandler
                 Name           = proposal.Name,
                 UnitPrice      = proposal.EstimatedUnitPrice ?? 0m, // si el mecánico no sabía, queda 0 — la oficina lo completa
                 Quantity       = proposal.Quantity,
-                Tier           = WorkOrderPartTier.Generic,
                 ApprovalStatus = QuoteItemApprovalStatus.Pending,
             });
         }

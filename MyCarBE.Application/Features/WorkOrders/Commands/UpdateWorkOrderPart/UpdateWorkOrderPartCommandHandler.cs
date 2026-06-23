@@ -48,7 +48,6 @@ public class UpdateWorkOrderPartCommandHandler
         part.Name        = request.Name.Trim();
         part.UnitPrice   = request.UnitPrice;
         part.Quantity    = request.Quantity;
-        part.Tier        = request.Tier;
 
         workOrder.RecalculateTotalAmount();
 

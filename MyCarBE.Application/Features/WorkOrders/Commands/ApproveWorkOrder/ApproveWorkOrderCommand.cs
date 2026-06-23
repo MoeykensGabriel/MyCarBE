@@ -8,7 +8,6 @@ namespace MyCarBE.Application.Features.WorkOrders.Commands.ApproveWorkOrder;
 /// items aprueba — items no incluidos quedan Rejected (whitelist).
 ///
 /// Reglas validadas en WorkOrder.ApplyCustomerApproval:
-///   - Cada AlternativeGroupId requiere exactamente 1 item aprobado.
 ///   - Al menos 1 item aprobado en total.
 ///   - Los IDs deben pertenecer a items activos de la orden.
 /// </summary>
