@@ -60,12 +60,31 @@ public class WorkOrdersController : ControllerBase
         [FromQuery] WorkOrderStatus?     status,
         [FromQuery] WorkOrderOwnerType?  ownerType,
         [FromQuery] string?              search,
+        [FromQuery] string?              statuses,
         [FromQuery] int                  page     = 1,
         [FromQuery] int                  pageSize = 20,
         CancellationToken                cancellationToken = default)
     {
-        var result = await _sender.Send(new GetWorkOrdersQuery(vehicleId, customerId, fleetId, status, ownerType, search, page, pageSize), cancellationToken);
+        var result = await _sender.Send(
+            new GetWorkOrdersQuery(vehicleId, customerId, fleetId, status, ownerType, search, page, pageSize, ParseStatuses(statuses)),
+            cancellationToken);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Parsea un CSV de estados (ej. "7,3,4,5") a una lista de WorkOrderStatus. Ignora inválidos.
+    /// Lo usa el atajo "Aprobadas" del front, que filtra por varios estados a la vez.
+    /// </summary>
+    private static IReadOnlyList<WorkOrderStatus>? ParseStatuses(string? csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return null;
+
+        var list = new List<WorkOrderStatus>();
+        foreach (var part in csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            if (int.TryParse(part, out var v) && Enum.IsDefined(typeof(WorkOrderStatus), v))
+                list.Add((WorkOrderStatus)v);
+
+        return list.Count > 0 ? list : null;
     }
 
     /// <summary>

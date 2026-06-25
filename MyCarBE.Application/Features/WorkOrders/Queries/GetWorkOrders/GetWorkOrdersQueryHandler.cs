@@ -28,6 +28,7 @@ public class GetWorkOrdersQueryHandler : IRequestHandler<GetWorkOrdersQuery, Pag
         var page      = Math.Max(1, request.Page);
         var pageSize  = Math.Clamp(request.PageSize, 1, 100);
         var status    = request.Status;
+        var statuses  = request.Statuses;
         var search    = request.Search;
         var ownerType = request.OwnerType;
 
@@ -36,11 +37,11 @@ public class GetWorkOrdersQueryHandler : IRequestHandler<GetWorkOrdersQuery, Pag
         {
             if (_currentUser.FleetId.HasValue)
                 return await MapPagedAsync(
-                    await _repository.GetByFleetIdAtEntryPagedAsync(_currentUser.FleetId.Value, status, search, ownerType, page, pageSize, cancellationToken));
+                    await _repository.GetByFleetIdAtEntryPagedAsync(_currentUser.FleetId.Value, status, statuses, search, ownerType, page, pageSize, cancellationToken));
 
             if (_currentUser.CustomerId.HasValue)
                 return await MapPagedAsync(
-                    await _repository.GetByCustomerIdAtEntryPagedAsync(_currentUser.CustomerId.Value, status, search, ownerType, page, pageSize, cancellationToken));
+                    await _repository.GetByCustomerIdAtEntryPagedAsync(_currentUser.CustomerId.Value, status, statuses, search, ownerType, page, pageSize, cancellationToken));
 
             return new PagedResult<WorkOrderSummaryDto>([], 0, page, pageSize);
         }
@@ -48,10 +49,10 @@ public class GetWorkOrdersQueryHandler : IRequestHandler<GetWorkOrdersQuery, Pag
         // Admin: filtra por el parámetro provisto; sin filtro → todas las órdenes
         var paged = request switch
         {
-            { VehicleId:  { } id } => await _repository.GetByVehicleIdPagedAsync(id, status, search, ownerType, page, pageSize, cancellationToken),
-            { CustomerId: { } id } => await _repository.GetByCustomerIdAtEntryPagedAsync(id, status, search, ownerType, page, pageSize, cancellationToken),
-            { FleetId:    { } id } => await _repository.GetByFleetIdAtEntryPagedAsync(id, status, search, ownerType, page, pageSize, cancellationToken),
-            _                      => await _repository.GetAllPagedAsync(status, search, ownerType, page, pageSize, cancellationToken)
+            { VehicleId:  { } id } => await _repository.GetByVehicleIdPagedAsync(id, status, statuses, search, ownerType, page, pageSize, cancellationToken),
+            { CustomerId: { } id } => await _repository.GetByCustomerIdAtEntryPagedAsync(id, status, statuses, search, ownerType, page, pageSize, cancellationToken),
+            { FleetId:    { } id } => await _repository.GetByFleetIdAtEntryPagedAsync(id, status, statuses, search, ownerType, page, pageSize, cancellationToken),
+            _                      => await _repository.GetAllPagedAsync(status, statuses, search, ownerType, page, pageSize, cancellationToken)
         };
 
         return await MapPagedAsync(paged);

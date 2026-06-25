@@ -13,5 +13,6 @@ public record GetWorkOrdersQuery(
     WorkOrderOwnerType?    OwnerType = null,
     string?                Search    = null,
     int                    Page      = 1,
-    int                    PageSize  = 20
+    int                    PageSize  = 20,
+    IReadOnlyList<WorkOrderStatus>? Statuses = null
 ) : IRequest<PagedResult<WorkOrderSummaryDto>>;
