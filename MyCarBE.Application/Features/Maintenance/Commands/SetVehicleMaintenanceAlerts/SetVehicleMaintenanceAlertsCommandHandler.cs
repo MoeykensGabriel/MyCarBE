@@ -55,7 +55,9 @@ public class SetVehicleMaintenanceAlertsCommandHandler
             }
             else
             {
-                // Nuevo: línea base = km/fecha actuales. NO setear Id (lo asigna SaveChangesAsync).
+                // Nuevo: línea base resuelta según el tipo (ver ResolveBaselineMileage) —
+                // los ítems "desde fábrica" alinean al múltiplo en vez de tomar el km de
+                // ingreso. NO setear Id (lo asigna SaveChangesAsync).
                 var nuevo = new MaintenanceAlert
                 {
                     VehicleId       = vehicle.Id,
@@ -64,7 +66,8 @@ public class SetVehicleMaintenanceAlertsCommandHandler
                     Description     = description,
                     IntervalKm      = item.IntervalKm,
                     IntervalMonths  = item.IntervalMonths,
-                    BaselineMileage = vehicle.CurrentMileage,
+                    BaselineMileage = MaintenanceAlertMappings.ResolveBaselineMileage(
+                        item.ItemType, item.IntervalKm, vehicle.CurrentMileage, item.LastServiceMileage),
                     BaselineDate    = now,
                 };
                 nuevo.Validate();

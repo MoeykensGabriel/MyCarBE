@@ -33,6 +33,12 @@ public class SetVehicleMaintenanceAlertsCommandValidator
             item.RuleFor(i => i.Description)
                 .MaximumLength(1000)
                 .When(i => !string.IsNullOrWhiteSpace(i.Description));
+
+            // Override de la línea base: el km del último cambio no puede ser negativo.
+            // El tope (≤ km actual del vehículo) se valida en el front, que sí conoce el km.
+            item.RuleFor(i => i.LastServiceMileage)
+                .GreaterThanOrEqualTo(0).WithMessage("El km del último cambio no puede ser negativo.")
+                .When(i => i.LastServiceMileage.HasValue);
         });
     }
 }
