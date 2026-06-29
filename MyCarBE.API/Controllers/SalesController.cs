@@ -10,11 +10,12 @@ using MyCarBE.Application.Features.Sales.Queries.GetSales;
 namespace MyCarBE.API.Controllers;
 
 /// <summary>
-/// Ventas de repuestos "de mostrador" (sin orden ni vehículo). Solo office: Admin / Recepcionista.
+/// Ventas de repuestos "de mostrador" (sin orden ni vehículo). Solo Admin:
+/// las ventas/comisiones son información sensible y no las maneja la oficina.
 /// </summary>
 [ApiController]
 [Route("api/sales")]
-[Authorize(Roles = "Admin,Receptionist")]
+[Authorize(Roles = "Admin")]
 public class SalesController : ControllerBase
 {
     private readonly ISender _sender;

@@ -84,10 +84,10 @@ public class CustomersController : ControllerBase
 
     /// <summary>
     /// Actualiza los datos editables de un cliente (nombre, apellido, teléfono, email).
-    /// Solo Admin.
+    /// Admin y Recepcionista (la oficina administra clientes; borrar queda solo para Admin).
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -76,10 +76,11 @@ public class FleetsController : ControllerBase
     }
 
     /// <summary>
-    /// Actualiza los datos de una flota existente.
+    /// Actualiza los datos de una flota existente. Admin y Recepcionista
+    /// (la oficina administra flotas; borrar queda solo para Admin).
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(FleetDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

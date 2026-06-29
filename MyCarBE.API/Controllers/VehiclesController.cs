@@ -71,10 +71,11 @@ public class VehiclesController : ControllerBase
     }
 
     /// <summary>
-    /// Actualiza un vehículo existente. Solo Admin.
+    /// Actualiza un vehículo existente. Admin y Recepcionista
+    /// (la oficina administra vehículos; borrar queda solo para Admin).
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(VehicleDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
