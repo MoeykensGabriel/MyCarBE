@@ -19,6 +19,9 @@ public class PartsStockRequestConfiguration : IEntityTypeConfiguration<PartsStoc
         builder.Property(r => r.ExternalReference)
                .HasMaxLength(100);
 
+        builder.Property(r => r.OcNumberSnapshot).HasMaxLength(100);
+        builder.Property(r => r.DepositAmountSnapshot).HasColumnType("numeric(18,2)");
+
         builder.Property(r => r.Status)
                .HasConversion<int>()
                .HasDefaultValue(StockRequestStatus.PendingReview);

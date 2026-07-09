@@ -47,17 +47,17 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
             .Include(w => w.Services.Where(s => !s.IsDeleted))
             .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
 
-    public Task<PagedResult<WorkOrder>> GetAllPagedAsync(WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken = default)
-        => PagedAsync(_context.WorkOrders, status, statuses, search, ownerType, page, pageSize, cancellationToken);
+    public Task<PagedResult<WorkOrder>> GetAllPagedAsync(WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+        => PagedAsync(_context.WorkOrders, status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken);
 
-    public Task<PagedResult<WorkOrder>> GetByVehicleIdPagedAsync(Guid vehicleId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken = default)
-        => PagedAsync(_context.WorkOrders.Where(w => w.VehicleId == vehicleId), status, statuses, search, ownerType, page, pageSize, cancellationToken);
+    public Task<PagedResult<WorkOrder>> GetByVehicleIdPagedAsync(Guid vehicleId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+        => PagedAsync(_context.WorkOrders.Where(w => w.VehicleId == vehicleId), status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken);
 
-    public Task<PagedResult<WorkOrder>> GetByCustomerIdAtEntryPagedAsync(Guid customerId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken = default)
-        => PagedAsync(_context.WorkOrders.Where(w => w.CustomerIdAtEntry == customerId), status, statuses, search, ownerType, page, pageSize, cancellationToken);
+    public Task<PagedResult<WorkOrder>> GetByCustomerIdAtEntryPagedAsync(Guid customerId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+        => PagedAsync(_context.WorkOrders.Where(w => w.CustomerIdAtEntry == customerId), status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken);
 
-    public Task<PagedResult<WorkOrder>> GetByFleetIdAtEntryPagedAsync(Guid fleetId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken = default)
-        => PagedAsync(_context.WorkOrders.Where(w => w.FleetIdAtEntry == fleetId), status, statuses, search, ownerType, page, pageSize, cancellationToken);
+    public Task<PagedResult<WorkOrder>> GetByFleetIdAtEntryPagedAsync(Guid fleetId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+        => PagedAsync(_context.WorkOrders.Where(w => w.FleetIdAtEntry == fleetId), status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken);
 
     public async Task<WorkOrderService?> GetServiceByIdAsync(Guid serviceId, CancellationToken cancellationToken = default)
         => await _context.WorkOrderServices
@@ -158,7 +158,7 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
             .ToListAsync(cancellationToken);
 
     private static async Task<PagedResult<WorkOrder>> PagedAsync(
-        IQueryable<WorkOrder> query, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken)
+        IQueryable<WorkOrder> query, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
         query = query
             .AsNoTracking()
@@ -175,6 +175,12 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
             query = ownerType.Value == WorkOrderOwnerType.Fleet
                 ? query.Where(w => w.FleetIdAtEntry != null)
                 : query.Where(w => w.CustomerIdAtEntry != null);
+
+        // Filtro de rango de fecha de creación (inclusive)
+        if (from.HasValue)
+            query = query.Where(w => w.CreatedAt >= from.Value);
+        if (to.HasValue)
+            query = query.Where(w => w.CreatedAt <= to.Value);
 
         if (!string.IsNullOrWhiteSpace(search))
         {

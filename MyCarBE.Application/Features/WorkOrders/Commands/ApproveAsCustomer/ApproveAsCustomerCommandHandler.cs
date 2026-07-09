@@ -47,6 +47,12 @@ public class ApproveAsCustomerCommandHandler : IRequestHandler<ApproveAsCustomer
         if (!ownsAsCustomer && !ownsViaFleet)
             throw new ForbiddenException("No tenés permiso para aprobar esta orden.");
 
+        // Presupuesto vencido: los precios quedaron viejos, no se puede aprobar. El cleanup
+        // horario cancela estas órdenes — este chequeo cubre la ventana entre ticks.
+        if (workOrder.QuoteExpiresAt is { } expiresAt && expiresAt < DateTime.UtcNow)
+            throw new BadRequestException(
+                "El presupuesto venció (validez: 14 días). Contactá al taller para que lo actualice y lo vuelva a enviar.");
+
         try
         {
             workOrder.ApplyCustomerApproval(request.ApprovedServiceIds, request.ApprovedPartIds);

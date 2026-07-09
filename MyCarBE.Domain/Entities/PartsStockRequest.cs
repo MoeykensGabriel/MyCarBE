@@ -21,6 +21,14 @@ public class PartsStockRequest : BaseEntity
     public string LicensePlateSnapshot { get; set; } = string.Empty;
 
     /// <summary>
+    /// Condición de venta al momento del pedido (snapshot de WorkOrder.SaleCondition,
+    /// misma filosofía que la patente). OC → número; Contado → seña.
+    /// </summary>
+    public SaleCondition? SaleConditionSnapshot { get; set; }
+    public string? OcNumberSnapshot { get; set; }
+    public decimal? DepositAmountSnapshot { get; set; }
+
+    /// <summary>
     /// ID que devolvió GestionPGB al recibir el pedido. Permite cruzar referencias entre
     /// sistemas si hay que investigar discrepancias. Nullable porque en la implementación stub
     /// no hay sistema externo.

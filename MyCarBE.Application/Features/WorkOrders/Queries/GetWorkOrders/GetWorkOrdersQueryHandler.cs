@@ -31,17 +31,19 @@ public class GetWorkOrdersQueryHandler : IRequestHandler<GetWorkOrdersQuery, Pag
         var statuses  = request.Statuses;
         var search    = request.Search;
         var ownerType = request.OwnerType;
+        var from      = request.From;
+        var to        = request.To;
 
         // Customer: ignora query params, usa sus propios IDs del JWT
         if (!_currentUser.IsAdmin)
         {
             if (_currentUser.FleetId.HasValue)
                 return await MapPagedAsync(
-                    await _repository.GetByFleetIdAtEntryPagedAsync(_currentUser.FleetId.Value, status, statuses, search, ownerType, page, pageSize, cancellationToken));
+                    await _repository.GetByFleetIdAtEntryPagedAsync(_currentUser.FleetId.Value, status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken));
 
             if (_currentUser.CustomerId.HasValue)
                 return await MapPagedAsync(
-                    await _repository.GetByCustomerIdAtEntryPagedAsync(_currentUser.CustomerId.Value, status, statuses, search, ownerType, page, pageSize, cancellationToken));
+                    await _repository.GetByCustomerIdAtEntryPagedAsync(_currentUser.CustomerId.Value, status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken));
 
             return new PagedResult<WorkOrderSummaryDto>([], 0, page, pageSize);
         }
@@ -49,10 +51,10 @@ public class GetWorkOrdersQueryHandler : IRequestHandler<GetWorkOrdersQuery, Pag
         // Admin: filtra por el parámetro provisto; sin filtro → todas las órdenes
         var paged = request switch
         {
-            { VehicleId:  { } id } => await _repository.GetByVehicleIdPagedAsync(id, status, statuses, search, ownerType, page, pageSize, cancellationToken),
-            { CustomerId: { } id } => await _repository.GetByCustomerIdAtEntryPagedAsync(id, status, statuses, search, ownerType, page, pageSize, cancellationToken),
-            { FleetId:    { } id } => await _repository.GetByFleetIdAtEntryPagedAsync(id, status, statuses, search, ownerType, page, pageSize, cancellationToken),
-            _                      => await _repository.GetAllPagedAsync(status, statuses, search, ownerType, page, pageSize, cancellationToken)
+            { VehicleId:  { } id } => await _repository.GetByVehicleIdPagedAsync(id, status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken),
+            { CustomerId: { } id } => await _repository.GetByCustomerIdAtEntryPagedAsync(id, status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken),
+            { FleetId:    { } id } => await _repository.GetByFleetIdAtEntryPagedAsync(id, status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken),
+            _                      => await _repository.GetAllPagedAsync(status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken)
         };
 
         return await MapPagedAsync(paged);

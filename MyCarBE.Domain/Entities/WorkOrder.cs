@@ -46,6 +46,15 @@ public class WorkOrder : BaseEntity
     public DateTime? QuoteExpiresAt { get; set; }
 
     /// <summary>
+    /// Condición de venta para los repuestos (la carga la oficina antes de aprobar).
+    /// Viaja al depósito al aprobar: OC → PurchaseOrderNumber; Contado → DepositAmount.
+    /// Nullable: órdenes sin repuestos de depósito pueden no definirla.
+    /// </summary>
+    public SaleCondition? SaleCondition { get; set; }
+    public string? PurchaseOrderNumber { get; set; }
+    public decimal? DepositAmount { get; set; }
+
+    /// <summary>
     /// Agendado del vehículo en el taller (por orden/vehículo). El admin setea ScheduledStart
     /// cuando el trabajo arranca; ScheduledEnd = inicio + duración total estimada de los servicios.
     /// Definen el rango en que el vehículo ocupa una bahía física en el calendario de ocupación.

@@ -13,8 +13,11 @@ namespace MyCarBE.Application.Features.WorkOrders.Commands.SendQuote;
 
 public class SendQuoteCommandHandler : IRequestHandler<SendQuoteCommand, WorkOrderDetailDto>
 {
-    /// <summary>TTL del presupuesto: 30 días desde el envío.</summary>
-    private static readonly TimeSpan QuoteTtl = TimeSpan.FromDays(30);
+    /// <summary>
+    /// TTL del presupuesto: 14 días desde el envío (pedido del taller: los precios
+    /// quedan viejos rápido). Aplica al QuoteExpiresAt de la orden y al token del link.
+    /// </summary>
+    private static readonly TimeSpan QuoteTtl = TimeSpan.FromDays(14);
 
     private readonly IWorkOrderRepository              _workOrderRepository;
     private readonly IWorkOrderApprovalTokenRepository _tokenRepository;

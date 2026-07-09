@@ -60,6 +60,11 @@ public class WorkOrderMappings : IRegister
             .Map(dest => dest.Parts,     src => src.Parts)
             .Map(dest => dest.Photos,    src => src.Photos)
             .Map(dest => dest.Timeline,  src => src.StatusChanges)
+            // Las áreas omitidas (IsSkipped) no viajan al detalle: el feed del cliente
+            // las mostraría como "área revisada" y nadie las revisó. El panel admin usa
+            // el endpoint completo de InspectionReports, que sí las incluye.
+            .Map(dest => dest.InspectionReports,
+                 src => src.InspectionReports.Where(r => !r.IsSkipped))
             // Duración total estimada: prioriza la estimación del mecánico, fallback al catálogo.
             // Se mapea en memoria (la entidad ya viene cargada con sus servicios).
             .Map(dest => dest.TotalEstimatedMinutes, src => src.Services

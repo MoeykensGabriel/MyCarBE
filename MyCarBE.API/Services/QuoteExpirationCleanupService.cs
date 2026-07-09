@@ -21,7 +21,7 @@ public sealed class QuoteExpirationCleanupService : BackgroundService
     /// <summary>Pausa inicial antes del primer tick (deja arrancar la app primero).</summary>
     private static readonly TimeSpan InitialDelay = TimeSpan.FromMinutes(1);
 
-    /// <summary>Frecuencia entre cleanups. Suficiente para un TTL de 30 días.</summary>
+    /// <summary>Frecuencia entre cleanups. Suficiente para un TTL de 14 días.</summary>
     private static readonly TimeSpan TickInterval = TimeSpan.FromHours(1);
 
     /// <summary>UserId marcador para eventos generados por este worker.</summary>

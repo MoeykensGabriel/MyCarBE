@@ -18,12 +18,10 @@ public record AvailableServiceDto(
     // Cuándo entró al pool (timestamp del servicio, no de la WO)
     DateTime CreatedAt,
 
-    // Vehículo (para contexto rápido)
+    // Vehículo (para contexto rápido). A propósito NO exponemos propietario/cliente/flota:
+    // el mecánico no debe saber para quién es el trabajo (política del taller).
     Guid     VehicleId,
     string   VehicleBrand,
     string   VehicleModel,
-    string   VehicleLicensePlate,
-
-    // Propietario (cliente individual o flota — texto descriptivo)
-    string?  OwnerName
+    string   VehicleLicensePlate
 );

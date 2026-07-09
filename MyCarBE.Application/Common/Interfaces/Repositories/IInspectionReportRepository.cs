@@ -24,4 +24,11 @@ public interface IInspectionReportRepository : IRepository<InspectionReport>
     /// Útil para que el admin consolide propuestas en el presupuesto.
     /// </summary>
     Task<IReadOnlyList<InspectionReport>> GetByWorkOrderWithProposalsAsync(Guid workOrderId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Áreas omitidas (IsSkipped=true) en la última orden no cancelada del vehículo,
+    /// con Area y WorkOrder eager-loaded. Vacío si la última visita cubrió todo.
+    /// Alimenta el aviso "quedó sin inspeccionar" en la ficha del vehículo y al crear una orden.
+    /// </summary>
+    Task<IReadOnlyList<InspectionReport>> GetSkippedForVehicleLastOrderAsync(Guid vehicleId, CancellationToken cancellationToken = default);
 }

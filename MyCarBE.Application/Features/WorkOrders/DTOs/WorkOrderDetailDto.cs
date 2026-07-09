@@ -24,6 +24,21 @@ public record WorkOrderDetailDto(
     string?                            ContactPersonPhone,
     DateTime                           CreatedAt,
     DateTime                           UpdatedAt,
+    /// <summary>Motivo de visita que el cliente reportó al traer el vehículo.</summary>
+    string?                            ServiceReason,
+    /// <summary>
+    /// Vencimiento del presupuesto (14 días desde el envío). Null si aún no se envió.
+    /// Vencido: el cliente no puede aprobar y el cleanup cancela la orden.
+    /// </summary>
+    DateTime?                          QuoteExpiresAt,
+    /// <summary>
+    /// Condición de venta para los repuestos (CC / OC / Contado). La carga la oficina
+    /// antes de aprobar y viaja al depósito con el pedido. OC → PurchaseOrderNumber;
+    /// Contado → DepositAmount (seña del cliente).
+    /// </summary>
+    SaleCondition?                     SaleCondition,
+    string?                            PurchaseOrderNumber,
+    decimal?                           DepositAmount,
     IReadOnlyList<WorkOrderServiceDto>              Services,
     IReadOnlyList<WorkOrderPartDto>                 Parts,
     IReadOnlyList<WorkOrderPhotoDto>                Photos,

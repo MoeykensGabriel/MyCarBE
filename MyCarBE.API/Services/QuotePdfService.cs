@@ -83,11 +83,13 @@ public class QuotePdfService : IPdfService
                     col.Item().Text("SERVICIOS").Bold().FontSize(9).FontColor("#777");
                     col.Item().PaddingTop(6).Table(table =>
                     {
+                        // Sin precio unitario (pedido del taller: el cliente ve solo el subtotal
+                        // por línea) y sin la descripción del servicio (ahí viajan las novedades
+                        // de la inspección y el "reportado por {mecánico}" — material interno).
                         table.ColumnsDefinition(cols =>
                         {
                             cols.ConstantColumn(35);   // Cant.
                             cols.RelativeColumn();      // Servicio
-                            cols.ConstantColumn(90);   // Precio unitario
                             cols.ConstantColumn(90);   // Subtotal
                         });
 
@@ -102,8 +104,6 @@ public class QuotePdfService : IPdfService
                             h.Cell().Element(HeaderCell)
                                 .Text("Servicio").FontColor(Colors.White).Bold().FontSize(9);
                             h.Cell().Element(HeaderCell).AlignRight()
-                                .Text("Precio unit.").FontColor(Colors.White).Bold().FontSize(9);
-                            h.Cell().Element(HeaderCell).AlignRight()
                                 .Text("Subtotal").FontColor(Colors.White).Bold().FontSize(9);
                         });
 
@@ -117,13 +117,7 @@ public class QuotePdfService : IPdfService
                             IContainer Cell(IContainer c) => c.Background(bg).Padding(6);
 
                             table.Cell().Element(Cell).AlignCenter().Text(service.Quantity.ToString());
-                            table.Cell().Element(Cell).Column(c =>
-                            {
-                                c.Item().Text(service.NameSnapshot).Bold();
-                                c.Item().Text(service.DescriptionSnapshot ?? "").FontSize(8).FontColor("#777");
-                            });
-                            table.Cell().Element(Cell).AlignRight()
-                                .Text($"$ {service.PriceSnapshot:N0}");
+                            table.Cell().Element(Cell).Text(service.NameSnapshot).Bold();
                             table.Cell().Element(Cell).AlignRight()
                                 .Text($"$ {service.Subtotal:N0}").Bold();
                         }
@@ -137,11 +131,11 @@ public class QuotePdfService : IPdfService
                         col.Item().Text("REPUESTOS").Bold().FontSize(9).FontColor("#777");
                         col.Item().PaddingTop(6).Table(partsTable =>
                         {
+                            // Sin precio unitario — misma regla que los servicios.
                             partsTable.ColumnsDefinition(cols =>
                             {
                                 cols.ConstantColumn(35);   // Cant.
                                 cols.RelativeColumn();      // Repuesto
-                                cols.ConstantColumn(90);   // Precio unitario
                                 cols.ConstantColumn(90);   // Subtotal
                             });
 
@@ -154,8 +148,6 @@ public class QuotePdfService : IPdfService
                                     .Text("Cant.").FontColor(Colors.White).Bold().FontSize(9);
                                 h.Cell().Element(PartHeaderCell)
                                     .Text("Repuesto").FontColor(Colors.White).Bold().FontSize(9);
-                                h.Cell().Element(PartHeaderCell).AlignRight()
-                                    .Text("Precio unit.").FontColor(Colors.White).Bold().FontSize(9);
                                 h.Cell().Element(PartHeaderCell).AlignRight()
                                     .Text("Subtotal").FontColor(Colors.White).Bold().FontSize(9);
                             });
@@ -170,8 +162,6 @@ public class QuotePdfService : IPdfService
 
                                 partsTable.Cell().Element(PartCell).AlignCenter().Text(part.Quantity.ToString());
                                 partsTable.Cell().Element(PartCell).Text(part.Name).Bold();
-                                partsTable.Cell().Element(PartCell).AlignRight()
-                                    .Text($"$ {part.UnitPrice:N0}");
                                 partsTable.Cell().Element(PartCell).AlignRight()
                                     .Text($"$ {part.Subtotal:N0}").Bold();
                             }
@@ -191,7 +181,7 @@ public class QuotePdfService : IPdfService
 
                     col.Item().PaddingTop(20);
 
-                    // Aviso de aprobación
+                    // Aviso de aprobación + validez (14 días desde el envío)
                     col.Item().Background("#fff3cd").Padding(10).Column(c =>
                     {
                         c.Item().Text("⚠ Este presupuesto requiere su aprobación para continuar con el trabajo.")
@@ -199,6 +189,11 @@ public class QuotePdfService : IPdfService
                         c.Item().PaddingTop(4)
                             .Text("Al aprobar, autoriza la realización de los servicios y repuestos detallados arriba.")
                             .FontSize(9).FontColor("#856404");
+                        c.Item().PaddingTop(4)
+                            .Text(wo.QuoteExpiresAt is { } quoteExpiresAt
+                                ? $"Presupuesto válido hasta el {quoteExpiresAt:dd/MM/yyyy}. Pasada esa fecha, solicite uno actualizado."
+                                : "Validez del presupuesto: 14 días desde su envío.")
+                            .Bold().FontSize(9).FontColor("#856404");
                     });
                 });
 

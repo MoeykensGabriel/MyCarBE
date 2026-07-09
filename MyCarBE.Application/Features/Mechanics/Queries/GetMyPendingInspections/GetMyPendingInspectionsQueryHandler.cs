@@ -70,11 +70,7 @@ public class GetMyPendingInspectionsQueryHandler : IRequestHandler<GetMyPendingI
                 .OrderBy(a => a.AreaName)
                 .ToList();
 
-            var ownerName =
-                wo.CustomerAtEntry is not null ? $"{wo.CustomerAtEntry.FirstName} {wo.CustomerAtEntry.LastName}".Trim()
-                : wo.FleetAtEntry is not null ? wo.FleetAtEntry.CompanyName
-                : null;
-
+            // Sin propietario/cliente/flota: el mecánico no debe saber para quién es el trabajo.
             result.Add(new PendingInspectionDto(
                 WorkOrderId:         wo.Id,
                 WorkOrderCreatedAt:  wo.CreatedAt,
@@ -84,7 +80,6 @@ public class GetMyPendingInspectionsQueryHandler : IRequestHandler<GetMyPendingI
                 VehicleBrand:        wo.Vehicle.Brand,
                 VehicleModel:        wo.Vehicle.Model,
                 VehicleLicensePlate: wo.Vehicle.LicensePlate,
-                OwnerName:           ownerName,
                 PendingAreas:        pendingAreas
             ));
         }

@@ -16,10 +16,10 @@ public interface IWorkOrderRepository : IRepository<WorkOrder>
     /// </summary>
     Task<WorkOrder?> GetWithServicesAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<PagedResult<WorkOrder>> GetAllPagedAsync(WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken = default);
-    Task<PagedResult<WorkOrder>> GetByVehicleIdPagedAsync(Guid vehicleId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken = default);
-    Task<PagedResult<WorkOrder>> GetByCustomerIdAtEntryPagedAsync(Guid customerId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken = default);
-    Task<PagedResult<WorkOrder>> GetByFleetIdAtEntryPagedAsync(Guid fleetId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<PagedResult<WorkOrder>> GetAllPagedAsync(WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
+    Task<PagedResult<WorkOrder>> GetByVehicleIdPagedAsync(Guid vehicleId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
+    Task<PagedResult<WorkOrder>> GetByCustomerIdAtEntryPagedAsync(Guid customerId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
+    Task<PagedResult<WorkOrder>> GetByFleetIdAtEntryPagedAsync(Guid fleetId, WorkOrderStatus? status, IReadOnlyList<WorkOrderStatus>? statuses, string? search, WorkOrderOwnerType? ownerType, int page, int pageSize, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
 
     // ── WorkOrderService (línea de servicio) ─────────────────────────────────
 

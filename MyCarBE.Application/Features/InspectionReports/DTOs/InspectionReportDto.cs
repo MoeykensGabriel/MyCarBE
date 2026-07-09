@@ -10,6 +10,8 @@ public record InspectionReportDto(
     string?  Findings,
     bool     HasIssue,
     bool     IsNoFindings,
+    bool     IsSkipped,
+    string?  SkipReason,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     IReadOnlyList<InspectionReportPhotoDto>           Photos,

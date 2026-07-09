@@ -14,5 +14,7 @@ public record GetWorkOrdersQuery(
     string?                Search    = null,
     int                    Page      = 1,
     int                    PageSize  = 20,
-    IReadOnlyList<WorkOrderStatus>? Statuses = null
+    IReadOnlyList<WorkOrderStatus>? Statuses = null,
+    DateTime?              From      = null,
+    DateTime?              To        = null
 ) : IRequest<PagedResult<WorkOrderSummaryDto>>;

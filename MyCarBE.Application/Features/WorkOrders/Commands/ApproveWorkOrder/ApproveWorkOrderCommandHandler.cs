@@ -39,6 +39,12 @@ public class ApproveWorkOrderCommandHandler : IRequestHandler<ApproveWorkOrderCo
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(approvalToken.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.WorkOrder), approvalToken.WorkOrderId);
 
+        // Defensa extra: el token ya expira junto con el presupuesto, pero si esos TTL
+        // divergen algún día, este chequeo mantiene la regla de negocio (14 días).
+        if (workOrder.QuoteExpiresAt is { } expiresAt && expiresAt < DateTime.UtcNow)
+            throw new BadRequestException(
+                "El presupuesto venció (validez: 14 días). Pedí al taller que lo actualice y lo vuelva a enviar.");
+
         try
         {
             // Aplica decisión + valida grupos + recalcula total — todo en el dominio.

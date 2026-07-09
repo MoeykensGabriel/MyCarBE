@@ -65,6 +65,11 @@ public class HttpStockService : IStockService
         {
             licensePlate = request.LicensePlateSnapshot,
             callbackUrl,
+            // Condición de venta (fase B): CC / OC + número / Contado + seña.
+            // GestionPGB tiene el mismo enum con los mismos nombres — viaja como string.
+            condition     = request.SaleConditionSnapshot?.ToString(),
+            ocNumber      = request.OcNumberSnapshot,
+            depositAmount = request.DepositAmountSnapshot,
             items        = request.Items.Select(i => new
             {
                 productCode = i.ProductCode,

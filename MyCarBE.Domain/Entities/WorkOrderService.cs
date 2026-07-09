@@ -202,4 +202,24 @@ public class WorkOrderService : BaseEntity
         MechanicNotes    = notes.Trim();
         MechanicFindings = string.IsNullOrWhiteSpace(findings) ? null : findings.Trim();
     }
+
+    /// <summary>
+    /// La oficina (admin/recepción) finaliza el servicio en nombre del taller — p. ej. cuando
+    /// el mecánico que lo aceptó no va a continuar (conflicto, renuncia). Solo válido desde
+    /// Accepted (trabajo en curso); si todavía está Pending corresponde desasignar, no finalizar.
+    /// Se mantiene AssignedMechanicId para conservar el historial de quién lo trabajó.
+    /// </summary>
+    public void CompleteByWorkshop(string notes)
+    {
+        if (AssignmentStatus != WorkOrderServiceAssignmentStatus.Accepted)
+            throw new InvalidOperationException(
+                $"Solo se puede finalizar un trabajo en curso (Accepted). Estado actual: {AssignmentStatus}.");
+
+        if (string.IsNullOrWhiteSpace(notes))
+            throw new InvalidOperationException("Las notas son obligatorias al finalizar un servicio.");
+
+        AssignmentStatus = WorkOrderServiceAssignmentStatus.Completed;
+        CompletedAt      = DateTime.UtcNow;
+        MechanicNotes    = notes.Trim();
+    }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyCarBE.Data.Context;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyCarBE.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260703050012_AddInspectionReportSkipped")]
+    partial class AddInspectionReportSkipped
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -961,9 +964,6 @@ namespace MyCarBE.Data.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<decimal?>("DepositAmountSnapshot")
-                        .HasColumnType("numeric(18,2)");
-
                     b.Property<string>("ExternalReference")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -975,13 +975,6 @@ namespace MyCarBE.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
-
-                    b.Property<string>("OcNumberSnapshot")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("SaleConditionSnapshot")
-                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .ValueGeneratedOnAdd()
@@ -1828,9 +1821,6 @@ namespace MyCarBE.Data.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<decimal?>("DepositAmount")
-                        .HasColumnType("numeric(18,2)");
-
                     b.Property<Guid?>("FleetIdAtEntry")
                         .HasColumnType("uuid");
 
@@ -1840,15 +1830,8 @@ namespace MyCarBE.Data.Migrations
                     b.Property<int>("MileageAtEntry")
                         .HasColumnType("integer");
 
-                    b.Property<string>("PurchaseOrderNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<DateTime?>("QuoteExpiresAt")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<int?>("SaleCondition")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("ScheduledEnd")
                         .HasColumnType("timestamp without time zone");

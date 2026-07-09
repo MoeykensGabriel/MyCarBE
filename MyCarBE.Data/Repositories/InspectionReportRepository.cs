@@ -46,6 +46,26 @@ public class InspectionReportRepository : Repository<InspectionReport>, IInspect
             .Where(r => r.WorkOrderId == workOrderId)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<InspectionReport>> GetSkippedForVehicleLastOrderAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    {
+        // Última orden no cancelada del vehículo — si no tiene omitidas, no hay aviso.
+        var lastOrderId = await _context.WorkOrders
+            .Where(w => w.VehicleId == vehicleId && w.CurrentStatus != Domain.Enums.WorkOrderStatus.Cancelled)
+            .OrderByDescending(w => w.CreatedAt)
+            .Select(w => (Guid?)w.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (lastOrderId is null)
+            return Array.Empty<InspectionReport>();
+
+        return await _context.InspectionReports
+            .Include(r => r.Area)
+            .Include(r => r.WorkOrder)
+            .Where(r => r.WorkOrderId == lastOrderId && r.IsSkipped)
+            .OrderBy(r => r.Area.Name)
+            .ToListAsync(cancellationToken);
+    }
+
     public void RemoveAllProposals(InspectionReport report)
     {
         if (report.ProposedServices.Count > 0)

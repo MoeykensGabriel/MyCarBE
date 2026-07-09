@@ -5,6 +5,7 @@ using MyCarBE.Application.Features.WorkOrderServices.Commands.AcceptService;
 using MyCarBE.Application.Features.WorkOrderServices.Commands.AssignMechanic;
 using MyCarBE.Application.Features.WorkOrderServices.Commands.ClaimService;
 using MyCarBE.Application.Features.WorkOrderServices.Commands.CompleteService;
+using MyCarBE.Application.Features.WorkOrderServices.Commands.CompleteServiceAsWorkshop;
 using MyCarBE.Application.Features.WorkOrderServices.Commands.ReleaseService;
 using MyCarBE.Application.Features.WorkOrderServices.Commands.ScheduleService;
 using MyCarBE.Application.Features.WorkOrderServices.Commands.UnassignMechanic;
@@ -28,9 +29,9 @@ public class WorkOrderServicesController : ControllerBase
     public record CompleteBody(string Notes, string? Findings);
     public record ScheduleBody(DateTime? ScheduledStart, DateTime? ScheduledEnd);
 
-    /// <summary>Admin asigna un mecánico a un servicio.</summary>
+    /// <summary>Admin u oficina asigna un mecánico a un servicio.</summary>
     [HttpPost("{id:guid}/assign")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -40,9 +41,13 @@ public class WorkOrderServicesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Admin desasigna al mecánico actual del servicio.</summary>
+    /// <summary>
+    /// Admin u oficina desasigna al mecánico actual del servicio (vuelve al pool).
+    /// Vale también para trabajos ya aceptados — destraba servicios cuyo mecánico
+    /// no va a continuar (se pelea, renuncia) para que otro los tome.
+    /// </summary>
     [HttpPost("{id:guid}/unassign")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -123,4 +128,21 @@ public class WorkOrderServicesController : ControllerBase
         await _sender.Send(new CompleteServiceCommand(id, body.Notes, body.Findings), cancellationToken);
         return NoContent();
     }
+
+    /// <summary>
+    /// Admin u oficina finaliza un trabajo en curso en nombre del taller — para destrabar
+    /// servicios cuyo mecánico no va a continuar. Notes obligatorio (mínimo 10 chars).
+    /// </summary>
+    [HttpPost("{id:guid}/complete-as-workshop")]
+    [Authorize(Roles = "Admin,Receptionist")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CompleteAsWorkshop(Guid id, [FromBody] CompleteAsWorkshopBody body, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new CompleteServiceAsWorkshopCommand(id, body.Notes), cancellationToken);
+        return NoContent();
+    }
+
+    public record CompleteAsWorkshopBody(string Notes);
 }

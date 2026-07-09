@@ -61,10 +61,15 @@ public class StockRequestOrchestrator : IStockRequestOrchestrator
 
         var stockRequest = new PartsStockRequest
         {
-            Id                   = Guid.NewGuid(),
-            WorkOrderId          = workOrder.Id,
-            LicensePlateSnapshot = licensePlate,
-            Status               = StockRequestStatus.PendingReview,
+            Id                    = Guid.NewGuid(),
+            WorkOrderId           = workOrder.Id,
+            LicensePlateSnapshot  = licensePlate,
+            // Condición de venta al momento de aprobar — el depósito la usa para
+            // decidir si compra (CC directo; OC con número; Contado con la seña).
+            SaleConditionSnapshot = workOrder.SaleCondition,
+            OcNumberSnapshot      = workOrder.PurchaseOrderNumber,
+            DepositAmountSnapshot = workOrder.DepositAmount,
+            Status                = StockRequestStatus.PendingReview,
             Items                = partsToOrder.Select(p => new PartsStockRequestItem
             {
                 Id              = Guid.NewGuid(),

@@ -38,6 +38,17 @@ public class InspectionReport : BaseEntity
     /// </summary>
     public bool IsNoFindings { get; set; }
 
+    /// <summary>
+    /// true = la oficina omitió la inspección de esta área (mecánico ocupado, cliente
+    /// apurado, etc.). A diferencia de IsNoFindings, deja constancia honesta de que
+    /// NADIE revisó el área — queda pendiente de revisar en la próxima visita.
+    /// Excluyente con HasIssue e IsNoFindings.
+    /// </summary>
+    public bool IsSkipped { get; set; }
+
+    /// <summary>Motivo de la omisión. Obligatorio cuando IsSkipped=true.</summary>
+    public string? SkipReason { get; set; }
+
     // Fotos vinculadas (se asocian vía WorkOrderPhoto.InspectionReportId)
     public ICollection<WorkOrderPhoto> Photos { get; set; } = new List<WorkOrderPhoto>();
 

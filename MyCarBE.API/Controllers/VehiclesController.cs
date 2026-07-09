@@ -6,6 +6,8 @@ using MyCarBE.Application.Features.Vehicles.Commands.DeleteVehicle;
 using MyCarBE.Application.Features.Vehicles.Commands.UpdateVehicle;
 using MyCarBE.Application.Common.Models;
 using MyCarBE.Application.Features.Vehicles.DTOs;
+using MyCarBE.Application.Features.InspectionReports.DTOs;
+using MyCarBE.Application.Features.InspectionReports.Queries.GetVehicleSkippedInspections;
 using MyCarBE.Application.Features.Vehicles.Queries.GetVehicleById;
 using MyCarBE.Application.Features.Vehicles.Queries.GetVehiclesByOwner;
 
@@ -53,6 +55,21 @@ public class VehiclesController : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetVehicleByIdQuery(id), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Áreas cuya inspección se omitió en la última visita del vehículo (orden no
+    /// cancelada más reciente). Alimenta el aviso "quedó sin inspeccionar" en la
+    /// ficha del vehículo y al crear una nueva orden. Solo oficina.
+    /// </summary>
+    [HttpGet("{id:guid}/skipped-inspections")]
+    [Authorize(Roles = "Admin,Receptionist")]
+    [ProducesResponseType(typeof(IReadOnlyList<SkippedInspectionAreaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSkippedInspections(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetVehicleSkippedInspectionsQuery(id), cancellationToken);
         return Ok(result);
     }
 

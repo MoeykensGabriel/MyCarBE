@@ -12,6 +12,8 @@ public class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
         builder.HasKey(w => w.Id);
 
         builder.Property(w => w.TotalAmount).HasColumnType("numeric(18,2)");
+        builder.Property(w => w.PurchaseOrderNumber).HasMaxLength(100);
+        builder.Property(w => w.DepositAmount).HasColumnType("numeric(18,2)");
         builder.Property(w => w.CustomerNote).HasMaxLength(1000);
         builder.Property(w => w.TechnicianNote).HasMaxLength(1000);
         builder.Property(w => w.ServiceReason).HasMaxLength(2000);

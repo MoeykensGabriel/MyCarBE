@@ -14,6 +14,8 @@ public class InspectionReportConfiguration : IEntityTypeConfiguration<Inspection
         builder.Property(r => r.Findings).HasMaxLength(4000);
         builder.Property(r => r.HasIssue).HasDefaultValue(false);
         builder.Property(r => r.IsNoFindings).HasDefaultValue(false);
+        builder.Property(r => r.IsSkipped).HasDefaultValue(false);
+        builder.Property(r => r.SkipReason).HasMaxLength(500);
 
         builder.HasOne(r => r.WorkOrder)
                .WithMany(w => w.InspectionReports)

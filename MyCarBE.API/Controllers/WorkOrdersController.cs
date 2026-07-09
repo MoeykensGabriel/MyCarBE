@@ -15,6 +15,7 @@ using MyCarBE.Application.Features.WorkOrders.Commands.RemovePartFromWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.RemoveServiceFromWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.ScheduleWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.SendQuote;
+using MyCarBE.Application.Features.WorkOrders.Commands.SetSaleCondition;
 using MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderNotes;
 using MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderPart;
 using MyCarBE.Application.Features.WorkOrders.Commands.UpdateWorkOrderServicePrice;
@@ -26,6 +27,7 @@ using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderById;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderQuotePdf;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrders;
 using MyCarBE.Application.Features.InspectionReports.Commands.MarkAreaNoFindings;
+using MyCarBE.Application.Features.InspectionReports.Commands.MarkAreaSkipped;
 using MyCarBE.Application.Features.InspectionReports.DTOs;
 using MyCarBE.Application.Features.InspectionReports.Queries.GetInspectionReportsByWorkOrder;
 using MyCarBE.Domain.Enums;
@@ -61,12 +63,14 @@ public class WorkOrdersController : ControllerBase
         [FromQuery] WorkOrderOwnerType?  ownerType,
         [FromQuery] string?              search,
         [FromQuery] string?              statuses,
+        [FromQuery] DateTime?            from,
+        [FromQuery] DateTime?            to,
         [FromQuery] int                  page     = 1,
         [FromQuery] int                  pageSize = 20,
         CancellationToken                cancellationToken = default)
     {
         var result = await _sender.Send(
-            new GetWorkOrdersQuery(vehicleId, customerId, fleetId, status, ownerType, search, page, pageSize, ParseStatuses(statuses)),
+            new GetWorkOrdersQuery(vehicleId, customerId, fleetId, status, ownerType, search, page, pageSize, ParseStatuses(statuses), from, to),
             cancellationToken);
         return Ok(result);
     }
@@ -522,6 +526,55 @@ public class WorkOrdersController : ControllerBase
     }
 
     public record MarkAreaNoFindingsBody(Guid AreaId);
+
+    /// <summary>
+    /// La oficina omite la inspección de un área (mecánico ocupado, cliente apurado, etc.).
+    /// A diferencia de "sin hallazgos", deja constancia de que nadie revisó el área:
+    /// crea un InspectionReport con IsSkipped=true y motivo obligatorio. El área queda
+    /// marcada para revisar en la próxima visita del vehículo.
+    /// </summary>
+    [HttpPost("{id:guid}/inspection-reports/skip")]
+    [Authorize(Roles = "Admin,Receptionist")]
+    [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> MarkAreaSkipped(
+        Guid id,
+        [FromBody] MarkAreaSkippedBody body,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new MarkAreaSkippedCommand(id, body.AreaId, body.Reason), cancellationToken);
+        return Ok(result);
+    }
+
+    public record MarkAreaSkippedBody(Guid AreaId, string Reason);
+
+    /// <summary>
+    /// La oficina define la condición de venta de los repuestos (CC / OC + número /
+    /// Contado + seña). Editable hasta la aprobación; viaja al depósito con el pedido.
+    /// </summary>
+    [HttpPut("{id:guid}/sale-condition")]
+    [Authorize(Roles = "Admin,Receptionist")]
+    [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetSaleCondition(
+        Guid id,
+        [FromBody] SetSaleConditionBody body,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new SetSaleConditionCommand(id, body.Condition, body.PurchaseOrderNumber, body.DepositAmount),
+            cancellationToken);
+        return Ok(result);
+    }
+
+    public record SetSaleConditionBody(
+        MyCarBE.Domain.Enums.SaleCondition? Condition,
+        string? PurchaseOrderNumber,
+        decimal? DepositAmount);
 
     /// <summary>
     /// El admin cierra la inspección colectiva — requiere que todas las áreas activas
