@@ -39,6 +39,19 @@ public class DecideAdditionalItemsCommandHandler
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
+        // Aprobar un repuesto de depósito dispara un pedido a GestionPGB con el snapshot de
+        // la condición de venta. Si la orden todavía no la tiene (ej: el presupuesto original
+        // era solo mano de obra), hay que cargarla antes de aprobar el adicional.
+        var approvingDepotParts = workOrder.Parts.Any(p =>
+            !p.IsDeleted &&
+            request.ApprovedPartIds.Contains(p.Id) &&
+            !string.IsNullOrWhiteSpace(p.ProductCode));
+
+        if (approvingDepotParts && workOrder.SaleCondition is null)
+            throw new BadRequestException(
+                "Estás aprobando repuestos de depósito: cargá la condición de venta " +
+                "(cuenta corriente / orden de compra / contado) antes de registrar la aprobación.");
+
         try
         {
             // Valida estado + items Pending, aplica la decisión y recalcula el total.

@@ -11,13 +11,18 @@ namespace MyCarBE.Application.Features.WorkOrders.Commands.SetSaleCondition;
 
 public class SetSaleConditionCommandHandler : IRequestHandler<SetSaleConditionCommand, WorkOrderDetailDto>
 {
-    // Editable solo mientras el pedido al depósito no se disparó (se dispara al aprobar).
+    // Editable mientras la orden está viva. Los pedidos al depósito ya enviados llevan su
+    // SNAPSHOT congelado (no se re-escriben); editar acá solo afecta pedidos FUTUROS —
+    // en Approved/InProgress importa para los adicionales (DecideAdditionalItems exige
+    // condición cargada antes de aprobar repuestos de depósito).
     private static readonly WorkOrderStatus[] EditableStatuses =
     {
         WorkOrderStatus.Received,
         WorkOrderStatus.UnderInspection,
         WorkOrderStatus.Diagnosing,
         WorkOrderStatus.AwaitingApproval,
+        WorkOrderStatus.Approved,
+        WorkOrderStatus.InProgress,
     };
 
     private readonly IWorkOrderRepository _workOrderRepository;

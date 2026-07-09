@@ -65,6 +65,17 @@ public class SendQuoteCommandHandler : IRequestHandler<SendQuoteCommand, WorkOrd
             throw new BadRequestException(
                 "El presupuesto debe tener al menos un servicio o repuesto cargado.");
 
+        // Si hay repuestos que van al depósito (ProductCode != null), la condición de venta es
+        // obligatoria ANTES de enviar: el cliente puede aprobar desde su email en cualquier
+        // momento y el pedido a GestionPGB se genera en ese instante con el snapshot de la
+        // condición. Sin este chequeo, el pedido puede salir sin condición y el depósito no
+        // sabe con qué criterio comprar.
+        var hasDepotParts = activeParts.Any(p => !string.IsNullOrWhiteSpace(p.ProductCode));
+        if (hasDepotParts && workOrder.SaleCondition is null)
+            throw new BadRequestException(
+                "El presupuesto tiene repuestos de depósito: cargá la condición de venta " +
+                "(cuenta corriente / orden de compra / contado) antes de enviarlo al cliente.");
+
         // ── Cambios atómicos (mismo SaveChanges) ────────────────────────────────
         var now = DateTime.UtcNow;
 
