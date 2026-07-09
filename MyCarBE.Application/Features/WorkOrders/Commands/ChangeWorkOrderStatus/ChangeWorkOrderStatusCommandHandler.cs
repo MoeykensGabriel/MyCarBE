@@ -43,6 +43,13 @@ public class ChangeWorkOrderStatusCommandHandler : IRequestHandler<ChangeWorkOrd
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.WorkOrder), request.WorkOrderId);
 
+        // La vuelta AwaitingApproval → Diagnosing ("Modificar presupuesto") también tiene side
+        // effects propios (descongelar items, resetear decisión, invalidar token). Endpoint dedicado.
+        if (workOrder.CurrentStatus == WorkOrderStatus.AwaitingApproval &&
+            request.NewStatus == WorkOrderStatus.Diagnosing)
+            throw new BadRequestException(
+                "Para modificar un presupuesto enviado usá POST /api/work-orders/{id}/revise-quote en lugar de cambiar el estado directamente.");
+
         try
         {
             // Shortcut del admin: si la WO está AwaitingApproval y el admin la mueve a

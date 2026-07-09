@@ -33,9 +33,13 @@ public class RemovePartFromWorkOrderCommandHandler
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
-        if (workOrder.CurrentStatus != WorkOrderStatus.Diagnosing)
+        // Diagnosing: armado del presupuesto, todo editable. Approved/InProgress: solo se
+        // pueden sacar ADICIONALES todavía Pending (lo ya decidido por el cliente no se toca).
+        if (workOrder.CurrentStatus is not (WorkOrderStatus.Diagnosing
+                                         or WorkOrderStatus.Approved
+                                         or WorkOrderStatus.InProgress))
             throw new BadRequestException(
-                $"Solo se pueden eliminar repuestos de una orden en estado 'Diagnosing'. Estado actual: '{workOrder.CurrentStatus}'.");
+                $"No se pueden eliminar repuestos de una orden en estado '{workOrder.CurrentStatus}'.");
 
         var part = workOrder.Parts.FirstOrDefault(p => p.Id == request.PartId && !p.IsDeleted)
             ?? throw new NotFoundException(nameof(WorkOrderPart), request.PartId);
@@ -43,6 +47,11 @@ public class RemovePartFromWorkOrderCommandHandler
         if (part.FrozenAt.HasValue)
             throw new BadRequestException(
                 "Este repuesto fue congelado al enviar el presupuesto y no se puede eliminar.");
+
+        if (workOrder.CurrentStatus is not WorkOrderStatus.Diagnosing &&
+            part.ApprovalStatus != QuoteItemApprovalStatus.Pending)
+            throw new BadRequestException(
+                "Este adicional ya fue decidido por el cliente y no se puede eliminar.");
 
         // Soft delete — interceptado por AppDbContext.SaveChangesAsync
         part.IsDeleted = true;

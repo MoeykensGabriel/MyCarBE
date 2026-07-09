@@ -33,7 +33,11 @@ public class AddAdHocServiceToWorkOrderCommandHandler
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
-        if (workOrder.CurrentStatus is WorkOrderStatus.Completed
+        // En AwaitingApproval se bloquea: el presupuesto salió congelado — volver a Diagnosing
+        // vía "Modificar presupuesto" (ReviseQuote). En Approved/InProgress entra como ADICIONAL
+        // Pending (no suma al total hasta que el cliente lo apruebe).
+        if (workOrder.CurrentStatus is WorkOrderStatus.AwaitingApproval
+                                    or WorkOrderStatus.Completed
                                     or WorkOrderStatus.Delivered
                                     or WorkOrderStatus.Cancelled)
             throw new BadRequestException(

@@ -26,30 +26,31 @@ public class StockRequestOrchestrator : IStockRequestOrchestrator
         WorkOrder workOrder,
         CancellationToken cancellationToken = default)
     {
-        // Idempotencia: si ya se creó un pedido para esta WO, no hacer nada.
-        // Esto puede pasar si la WO transiciona varias veces (ej. el admin la pasa a
-        // Approved y después a InProgress — ambos disparan el orchestrator).
-        var existing = await _repository.GetByWorkOrderIdAsync(workOrder.Id, cancellationToken);
-        if (existing is not null)
-        {
-            _logger.LogDebug(
-                "Stock request ya existe para WorkOrder {WorkOrderId} (Id={RequestId}). Skip.",
-                workOrder.Id, existing.Id);
-            return;
-        }
+        // Delta-based e idempotente: se piden solo los repuestos aprobados que todavía no
+        // figuran en ningún pedido previo de esta WO. Cubre dos escenarios:
+        //   - La WO transiciona varias veces (Approved → InProgress): segunda llamada no
+        //     encuentra repuestos sin pedir → no hace nada.
+        //   - Adicionales aprobados durante la reparación (DecideAdditionalItems): se genera
+        //     un pedido NUEVO con solo esos repuestos, sin tocar el pedido original.
+        var existingRequests = await _repository.GetAllByWorkOrderIdAsync(workOrder.Id, cancellationToken);
+        var alreadyRequestedPartIds = existingRequests
+            .SelectMany(r => r.Items)
+            .Select(i => i.WorkOrderPartId)
+            .ToHashSet();
 
-        // Tomar todos los repuestos aprobados con ProductCode. Los custom (ProductCode = null)
-        // no pasan por el depósito — el taller los compra suelto.
+        // Tomar los repuestos aprobados con ProductCode que no se pidieron todavía. Los custom
+        // (ProductCode = null) no pasan por el depósito — el taller los compra suelto.
         var partsToOrder = workOrder.Parts
             .Where(p => !p.IsDeleted
                      && p.ApprovalStatus == QuoteItemApprovalStatus.Approved
-                     && !string.IsNullOrWhiteSpace(p.ProductCode))
+                     && !string.IsNullOrWhiteSpace(p.ProductCode)
+                     && !alreadyRequestedPartIds.Contains(p.Id))
             .ToList();
 
         if (partsToOrder.Count == 0)
         {
-            _logger.LogInformation(
-                "WorkOrder {WorkOrderId} aprobada sin repuestos del catálogo — no se genera pedido al depósito.",
+            _logger.LogDebug(
+                "WorkOrder {WorkOrderId}: sin repuestos aprobados nuevos para pedir al depósito. Skip.",
                 workOrder.Id);
             return;
         }

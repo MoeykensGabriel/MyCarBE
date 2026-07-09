@@ -33,8 +33,12 @@ public class AddServiceToWorkOrderCommandHandler : IRequestHandler<AddServiceToW
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
-        // Services can only be added while the order is not yet completed or cancelled
-        if (workOrder.CurrentStatus is WorkOrderStatus.Completed
+        // No se agregan servicios a órdenes cerradas, ni en AwaitingApproval: el presupuesto
+        // ya salió congelado — para modificarlo hay que volver a Diagnosing ("Modificar
+        // presupuesto" / ReviseQuote). En Approved/InProgress el servicio entra como ADICIONAL:
+        // nace Pending y no suma al total hasta que el cliente lo apruebe (DecideAdditionalItems).
+        if (workOrder.CurrentStatus is WorkOrderStatus.AwaitingApproval
+                                    or WorkOrderStatus.Completed
                                     or WorkOrderStatus.Delivered
                                     or WorkOrderStatus.Cancelled)
             throw new BadRequestException(

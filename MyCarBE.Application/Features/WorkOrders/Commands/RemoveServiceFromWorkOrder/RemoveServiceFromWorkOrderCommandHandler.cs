@@ -29,7 +29,10 @@ public class RemoveServiceFromWorkOrderCommandHandler : IRequestHandler<RemoveSe
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.WorkOrder), request.WorkOrderId);
 
-        if (workOrder.CurrentStatus is WorkOrderStatus.Completed
+        // En AwaitingApproval se bloquea: el presupuesto salió congelado y el cliente lo está
+        // mirando — para sacarle items hay que volver a Diagnosing ("Modificar presupuesto").
+        if (workOrder.CurrentStatus is WorkOrderStatus.AwaitingApproval
+                                     or WorkOrderStatus.Completed
                                      or WorkOrderStatus.Delivered
                                      or WorkOrderStatus.Cancelled)
             throw new BadRequestException(

@@ -5,8 +5,11 @@ namespace MyCarBE.Application.Common.Interfaces.Repositories;
 
 public interface IPartsStockRequestRepository : IRepository<PartsStockRequest>
 {
-    /// <summary>Devuelve el pedido (con items) de una WO, o null si todavía no se creó.</summary>
-    Task<PartsStockRequest?> GetByWorkOrderIdAsync(Guid workOrderId, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Todos los pedidos (con items) de una WO. Puede haber más de uno: el original de la
+    /// aprobación del presupuesto + pedidos adicionales por items aprobados durante la reparación.
+    /// </summary>
+    Task<IReadOnlyList<PartsStockRequest>> GetAllByWorkOrderIdAsync(Guid workOrderId, CancellationToken cancellationToken = default);
 
     /// <summary>Devuelve el pedido con items + WorkOrder y Vehicle para la pantalla de seguimiento.</summary>
     Task<PartsStockRequest?> GetWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);

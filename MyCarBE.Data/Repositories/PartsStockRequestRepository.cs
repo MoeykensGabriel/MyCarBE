@@ -10,10 +10,12 @@ public class PartsStockRequestRepository : Repository<PartsStockRequest>, IParts
 {
     public PartsStockRequestRepository(AppDbContext context) : base(context) { }
 
-    public async Task<PartsStockRequest?> GetByWorkOrderIdAsync(Guid workOrderId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PartsStockRequest>> GetAllByWorkOrderIdAsync(Guid workOrderId, CancellationToken cancellationToken = default)
         => await _context.PartsStockRequests
             .Include(r => r.Items.Where(i => !i.IsDeleted))
-            .FirstOrDefaultAsync(r => r.WorkOrderId == workOrderId, cancellationToken);
+            .Where(r => r.WorkOrderId == workOrderId)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync(cancellationToken);
 
     public async Task<PartsStockRequest?> GetWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
         => await _context.PartsStockRequests

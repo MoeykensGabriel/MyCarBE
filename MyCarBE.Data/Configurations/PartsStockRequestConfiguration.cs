@@ -31,9 +31,10 @@ public class PartsStockRequestConfiguration : IEntityTypeConfiguration<PartsStoc
                .HasForeignKey(r => r.WorkOrderId)
                .OnDelete(DeleteBehavior.Cascade);
 
-        // Una WO solo tiene un PartsStockRequest activo. Si en el futuro se permite re-aprobar,
-        // habrá que relajar esto — por ahora el orchestrator garantiza idempotencia.
-        builder.HasIndex(r => r.WorkOrderId).IsUnique();
+        // Una WO puede tener varios pedidos: el original de la aprobación del presupuesto
+        // + adicionales por items aprobados durante la reparación (DecideAdditionalItems).
+        // La idempotencia la garantiza el orchestrator delta-based (no repite repuestos ya pedidos).
+        builder.HasIndex(r => r.WorkOrderId);
         builder.HasIndex(r => r.LicensePlateSnapshot);
         builder.HasIndex(r => r.Status);
     }

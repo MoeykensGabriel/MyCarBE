@@ -10,9 +10,11 @@ using MyCarBE.Application.Features.WorkOrders.Commands.ChangeWorkOrderStatus;
 using MyCarBE.Application.Features.WorkOrders.Commands.CloseInspection;
 using MyCarBE.Application.Features.WorkOrders.Commands.ConvertInspectionProposals;
 using MyCarBE.Application.Features.WorkOrders.Commands.CreateWorkOrder;
+using MyCarBE.Application.Features.WorkOrders.Commands.DecideAdditionalItems;
 using MyCarBE.Application.Features.WorkOrders.Commands.DeleteWorkOrderPhoto;
 using MyCarBE.Application.Features.WorkOrders.Commands.RemovePartFromWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.RemoveServiceFromWorkOrder;
+using MyCarBE.Application.Features.WorkOrders.Commands.ReviseQuote;
 using MyCarBE.Application.Features.WorkOrders.Commands.ScheduleWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.SendQuote;
 using MyCarBE.Application.Features.WorkOrders.Commands.SetSaleCondition;
@@ -315,6 +317,57 @@ public class WorkOrdersController : ControllerBase
     }
 
     /// <summary>
+    /// "Modificar presupuesto": vuelve la orden de AwaitingApproval a Diagnosing para editar
+    /// los items y reenviar. Descongela items, resetea su decisión a Pending, limpia el
+    /// vencimiento e invalida el link de aprobación vigente. Solo Admin.
+    /// </summary>
+    [HttpPost("{id:guid}/revise-quote")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReviseQuote(
+        Guid id,
+        [FromBody] ReviseQuoteRequest? body,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new ReviseQuoteCommand(id, body?.Note), cancellationToken);
+        return Ok(result);
+    }
+
+    public record ReviseQuoteRequest(string? Note);
+
+    /// <summary>
+    /// Decide items ADICIONALES (surgidos después de aprobar el presupuesto original):
+    /// la oficina registra qué aprobó/rechazó el cliente. La orden no cambia de estado.
+    /// Los repuestos aprobados generan un pedido adicional al depósito. Solo Admin.
+    /// </summary>
+    [HttpPost("{id:guid}/additional-items/decide")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DecideAdditionalItems(
+        Guid id,
+        [FromBody] DecideAdditionalItemsRequest body,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new DecideAdditionalItemsCommand(
+            id,
+            body.ApprovedServiceIds ?? [],
+            body.RejectedServiceIds ?? [],
+            body.ApprovedPartIds ?? [],
+            body.RejectedPartIds ?? []), cancellationToken);
+        return Ok(result);
+    }
+
+    public record DecideAdditionalItemsRequest(
+        IReadOnlyList<Guid>? ApprovedServiceIds,
+        IReadOnlyList<Guid>? RejectedServiceIds,
+        IReadOnlyList<Guid>? ApprovedPartIds,
+        IReadOnlyList<Guid>? RejectedPartIds);
+
+    /// <summary>
     /// Descarga el PDF del presupuesto.
     /// - Admin: cualquier orden con presupuesto generado.
     /// - Customer: solo sus propias órdenes (validación de ownership en el handler).
@@ -408,11 +461,13 @@ public class WorkOrdersController : ControllerBase
     }
 
     // ── Repuestos (parts) ─────────────────────────────────────────────────────
-    // Solo editables durante Diagnosing — antes de enviar el presupuesto al cliente.
+    // Editables durante Diagnosing (armado del presupuesto) y en Approved/InProgress como
+    // ADICIONALES Pending (no suman al total hasta que el cliente los apruebe).
     // ProductCode es opcional: si es null el repuesto no se envía a GestionPGB.
 
     /// <summary>
-    /// Agrega un repuesto a la orden durante la cotización. Solo Admin, solo en Diagnosing.
+    /// Agrega un repuesto a la orden. En Diagnosing forma parte del presupuesto; en
+    /// Approved/InProgress entra como adicional Pending. Solo Admin.
     /// </summary>
     [HttpPost("{id:guid}/parts")]
     [Authorize(Roles = "Admin")]
