@@ -24,6 +24,13 @@ public class PartsStockRequestItem : BaseEntity
 
     public int Quantity { get; set; }
 
+    /// <summary>
+    /// Precio de venta unitario del repuesto (snapshot del WorkOrderPart al aprobar).
+    /// Sale de la planilla de precios del taller y viaja al depósito como referencia
+    /// en su planilla de pedidos. Nullable: pedidos previos a este campo no lo tienen.
+    /// </summary>
+    public decimal? UnitPrice { get; set; }
+
     public StockRequestItemStatus Status { get; set; } = StockRequestItemStatus.PendingReview;
 
     /// <summary>Nota opcional del depósito (ej: "Proveedor estima 3 días", "Sin stock confirmado").</summary>

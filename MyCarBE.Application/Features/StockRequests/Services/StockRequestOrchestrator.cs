@@ -78,6 +78,7 @@ public class StockRequestOrchestrator : IStockRequestOrchestrator
                 ProductCode     = p.ProductCode!,
                 Name            = p.Name,
                 Quantity        = p.Quantity,
+                UnitPrice       = p.UnitPrice,
                 Status          = StockRequestItemStatus.PendingReview,
             }).ToList()
         };

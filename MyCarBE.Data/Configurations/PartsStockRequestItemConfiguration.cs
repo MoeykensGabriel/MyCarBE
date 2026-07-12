@@ -20,6 +20,9 @@ public class PartsStockRequestItemConfiguration : IEntityTypeConfiguration<Parts
                .IsRequired()
                .HasMaxLength(200);
 
+        builder.Property(i => i.UnitPrice)
+               .HasColumnType("numeric(18,2)");
+
         builder.Property(i => i.Status)
                .HasConversion<int>()
                .HasDefaultValue(StockRequestItemStatus.PendingReview);

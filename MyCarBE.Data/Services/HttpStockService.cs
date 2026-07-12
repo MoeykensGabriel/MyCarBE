@@ -74,6 +74,9 @@ public class HttpStockService : IStockService
             {
                 productCode = i.ProductCode,
                 quantity    = i.Quantity,
+                // Precio de venta de la planilla del taller — referencia para la
+                // columna Precio de la planilla de pedidos del depósito.
+                unitPrice   = i.UnitPrice,
             }).ToList(),
         };
 
