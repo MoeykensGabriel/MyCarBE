@@ -1,3 +1,4 @@
+using MyCarBE.Application.Common.Formatting;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Models;
 using QuestPDF.Fluent;
@@ -119,7 +120,7 @@ public class QuotePdfService : IPdfService
                             table.Cell().Element(Cell).AlignCenter().Text(service.Quantity.ToString());
                             table.Cell().Element(Cell).Text(service.NameSnapshot).Bold();
                             table.Cell().Element(Cell).AlignRight()
-                                .Text($"$ {service.Subtotal:N0}").Bold();
+                                .Text(MoneyFormat.ArCurrency(service.Subtotal)).Bold();
                         }
                     });
 
@@ -163,7 +164,7 @@ public class QuotePdfService : IPdfService
                                 partsTable.Cell().Element(PartCell).AlignCenter().Text(part.Quantity.ToString());
                                 partsTable.Cell().Element(PartCell).Text(part.Name).Bold();
                                 partsTable.Cell().Element(PartCell).AlignRight()
-                                    .Text($"$ {part.Subtotal:N0}").Bold();
+                                    .Text(MoneyFormat.ArCurrency(part.Subtotal)).Bold();
                             }
                         });
                     }
@@ -175,7 +176,7 @@ public class QuotePdfService : IPdfService
                         {
                             inner.RelativeItem().Text("TOTAL").FontColor(Colors.White).Bold().FontSize(13);
                             inner.RelativeItem().AlignRight()
-                                .Text($"$ {wo.TotalAmount:N0}").FontColor(Colors.White).Bold().FontSize(13);
+                                .Text(MoneyFormat.ArCurrency(wo.TotalAmount)).FontColor(Colors.White).Bold().FontSize(13);
                         });
                     });
 

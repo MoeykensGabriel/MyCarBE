@@ -1,5 +1,6 @@
 using MediatR;
 using MyCarBE.Application.Common.Exceptions;
+using MyCarBE.Application.Common.Formatting;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Interfaces.Repositories;
 using MyCarBE.Application.Features.VehicleDocuments; // VehicleOwnershipGuard (compartido)
@@ -43,7 +44,7 @@ public class ReportVehicleMileageCommandHandler
         if (request.Mileage < vehicle.CurrentMileage)
             throw new BadRequestException(
                 $"El kilometraje no puede ser menor a la última lectura " +
-                $"({vehicle.CurrentMileage:N0} km). Si la lectura anterior está mal, contactá al taller.");
+                $"({MoneyFormat.ArNumber(vehicle.CurrentMileage)} km). Si la lectura anterior está mal, contactá al taller.");
 
         // Plausibilidad: salto absurdo desde la última lectura → typo casi seguro.
         // Solo el admin puede pasar por encima (corrige errores reales).
@@ -53,8 +54,8 @@ public class ReportVehicleMileageCommandHandler
             var delta = request.Mileage - vehicle.CurrentMileage;
             if (delta / days > MaxPlausibleKmPerDay)
                 throw new BadRequestException(
-                    $"El valor implica más de {MaxPlausibleKmPerDay:N0} km por día desde la última " +
-                    $"lectura ({vehicle.CurrentMileage:N0} km). Revisá que no haya un dígito de más; " +
+                    $"El valor implica más de {MoneyFormat.ArNumber(MaxPlausibleKmPerDay)} km por día desde la última " +
+                    $"lectura ({MoneyFormat.ArNumber(vehicle.CurrentMileage)} km). Revisá que no haya un dígito de más; " +
                     "si el valor es correcto, contactá al taller.");
         }
 

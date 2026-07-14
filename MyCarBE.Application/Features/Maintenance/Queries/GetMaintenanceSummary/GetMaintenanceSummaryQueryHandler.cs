@@ -116,7 +116,7 @@ public class GetMaintenanceSummaryQueryHandler
 
         // Warning: mostramos el contador que esté próximo (km tiene prioridad si aplica).
         if (e.KmRemaining is <= MaintenanceAlertStatusCalculator.DueSoonKm)
-            return $"Próximo en {Math.Max(0, e.KmRemaining!.Value):N0} km";
+            return $"Próximo en {Common.Formatting.MoneyFormat.ArNumber(Math.Max(0, e.KmRemaining!.Value))} km";
 
         return $"Próximo en {Math.Max(0, e.DaysRemaining ?? 0)} días";
     }

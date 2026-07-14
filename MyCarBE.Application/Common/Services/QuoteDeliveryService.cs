@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using MyCarBE.Application.Common.Formatting;
 using MyCarBE.Application.Common.Interfaces.Repositories;
 using MyCarBE.Application.Common.Models;
 using MyCarBE.Application.Features.WorkOrders.DTOs;
@@ -117,7 +118,7 @@ public sealed class QuoteDeliveryService : IQuoteDeliveryService
     private static string BuildBody(string name, string brand, string model, decimal total, string approvalLink) => $"""
         <h2>Hola, {name}!</h2>
         <p>El diagnóstico de tu <strong>{brand} {model}</strong> está listo.</p>
-        <p>Adjuntamos el presupuesto detallado. El total estimado es de <strong>$ {total:N0}</strong>.</p>
+        <p>Adjuntamos el presupuesto detallado. El total estimado es de <strong>{MoneyFormat.ArCurrency(total)}</strong>.</p>
         <p>Para revisar y aprobar los items, hacé clic en el siguiente botón:</p>
         <p style="margin:24px 0;">
           <a href="{approvalLink}"
