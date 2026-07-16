@@ -1,0 +1,12 @@
+# Nunca al build context: binarios, git, logs y — sobre todo — secretos locales.
+**/bin/
+**/obj/
+.git/
+.gitignore
+logs/
+**/wwwroot/uploads/
+**/appsettings.Development.json
+.claude/
+*.md
+Dockerfile
+.dockerignore

@@ -44,8 +44,13 @@ builder.Services.AddApplicationLayer();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-// File storage — swap this for Azure Blob / S3 at deploy time
-builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+// File storage — Storage:Provider decide la implementación:
+//   "R2"    → Cloudflare R2 (producción; el disco de Railway es efímero)
+//   "Local" → wwwroot/uploads (default, desarrollo)
+if (string.Equals(builder.Configuration["Storage:Provider"], "R2", StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddScoped<IFileStorageService, R2FileStorageService>();
+else
+    builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
 // Email — swap this for SendGrid / SES at deploy time
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
@@ -107,13 +112,21 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// CORS — permite requests desde el frontend Next.js
+// CORS — permite requests desde el frontend Next.js.
+// Orígenes por env var CORS_ORIGINS (Railway/prod, CSV) o Cors:AllowedOrigins en
+// appsettings; fallback a localhost para dev. Mismo patrón que GestionPGB.
+var allowedOrigins =
+    (Environment.GetEnvironmentVariable("CORS_ORIGINS")
+    ?? builder.Configuration["Cors:AllowedOrigins"]
+    ?? "http://localhost:3000")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
         policy
-            .WithOrigins("http://localhost:3000")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -177,7 +190,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirect solo en dev: en Railway el proxy termina TLS y nos pasa HTTP —
+// redirigir ahí genera loops/warnings. En prod el TLS lo garantiza la plataforma.
+if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
 app.UseStaticFiles();     // sirve wwwroot/uploads/...
 app.UseCors("FrontendPolicy");  // ← antes de Auth
 app.UseRateLimiter();           // ← anti fuerza-bruta (política "login")
@@ -185,13 +202,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Auto-migración SOLO en Development:
+// Auto-migración en Development, o en producción si Database:MigrateOnStartup=true
+// (env var Database__MigrateOnStartup en Railway — sin consola interactiva, migrar
+// al arrancar es el paso de deploy):
 // - Si la DB no existe, EF la crea.
 // - Si hay migraciones pendientes, las aplica.
 // - Si está al día, no hace nada (idempotente).
-// En producción NO se ejecuta — las migraciones deben aplicarse manualmente
-// como paso explícito del deploy para evitar cambios accidentales en la DB.
-if (app.Environment.IsDevelopment())
+var migrateOnStartup = app.Configuration.GetValue<bool>("Database:MigrateOnStartup");
+if (app.Environment.IsDevelopment() || migrateOnStartup)
 {
     using var scope = app.Services.CreateScope();
     var dbContext   = scope.ServiceProvider.GetRequiredService<AppDbContext>();

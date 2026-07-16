@@ -20,9 +20,9 @@ RUN mkdir -p /app/wwwroot/uploads
 
 COPY --from=build /app/publish .
 
-ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "MyCarBE.API.dll"]
+# Respeta el PORT que inyecta Railway; fallback 8080 (mismo patrón que GestionPGB).
+ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} dotnet MyCarBE.API.dll"]

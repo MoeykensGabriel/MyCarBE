@@ -20,7 +20,7 @@ public static class DataLayerExtensions
         // PostgreSQL + EF Core
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
+                ResolveConnectionString(configuration),
                 npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
             )
         );
@@ -95,5 +95,34 @@ public static class DataLayerExtensions
         services.AddValidatorsFromAssembly(typeof(DataLayerExtensions).Assembly);
 
         return services;
+    }
+
+    /// <summary>
+    /// Resuelve la connection string en este orden:
+    ///   1. ConnectionStrings:DefaultConnection (appsettings / env ConnectionStrings__DefaultConnection)
+    ///   2. DATABASE_URL formato URI (postgresql://user:pass@host:port/db) — es lo que
+    ///      inyecta Railway y Npgsql NO lo entiende directo, así que lo convertimos
+    ///      a clave-valor con SSL requerido (Railway/managed Postgres lo exige).
+    /// </summary>
+    private static string? ResolveConnectionString(IConfiguration configuration)
+    {
+        var direct = configuration.GetConnectionString("DefaultConnection");
+        if (!string.IsNullOrWhiteSpace(direct))
+            return direct;
+
+        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
+                          ?? configuration["DATABASE_URL"];
+        if (string.IsNullOrWhiteSpace(databaseUrl))
+            return null; // EF tirará su error estándar de connection string faltante
+
+        var uri      = new Uri(databaseUrl);
+        var userInfo = uri.UserInfo.Split(':', 2);
+
+        return $"Host={uri.Host};" +
+               $"Port={(uri.Port > 0 ? uri.Port : 5432)};" +
+               $"Database={uri.AbsolutePath.TrimStart('/')};" +
+               $"Username={Uri.UnescapeDataString(userInfo[0])};" +
+               $"Password={(userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty)};" +
+               "SSL Mode=Require;Trust Server Certificate=true";
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MyCarBE.Data.Context;
@@ -19,9 +20,13 @@ public static class DatabaseSeeder
         using var scope       = serviceProvider.CreateScope();
         var userManager       = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var logger            = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationUser>>();
+        var configuration     = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-        const string adminEmail    = "admin@mycar.com";
-        const string adminPassword = "Admin@1234";
+        // Credenciales iniciales parametrizables (env Seed__AdminEmail / Seed__AdminPassword
+        // en producción). El fallback queda solo para desarrollo local. Cambiar la
+        // contraseña tras el primer login igualmente.
+        var adminEmail    = configuration["Seed:AdminEmail"]    ?? "admin@mycar.com";
+        var adminPassword = configuration["Seed:AdminPassword"] ?? "Admin@1234";
 
         var existing = await userManager.FindByEmailAsync(adminEmail);
         if (existing is not null)
@@ -48,7 +53,8 @@ public static class DatabaseSeeder
             }
 
             await userManager.AddToRoleAsync(admin, "Admin");
-            logger.LogInformation("Admin user seeded → {Email} / {Password}", adminEmail, adminPassword);
+            // Nunca loguear la contraseña — los logs de la plataforma quedan persistidos.
+            logger.LogInformation("Admin user seeded → {Email}", adminEmail);
         }
 
         // ── Workshop settings: garantizamos que exista la fila singleton ──
