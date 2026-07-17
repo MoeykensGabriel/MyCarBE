@@ -1,5 +1,6 @@
 using MapsterMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using MyCarBE.Application.Common.Exceptions;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Interfaces.Repositories;
@@ -17,19 +18,22 @@ public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerComman
     private readonly IEmailService       _emailService;
     private readonly IUnitOfWork         _unitOfWork;
     private readonly IMapper             _mapper;
+    private readonly ILogger<CreateCustomerCommandHandler> _logger;
 
     public CreateCustomerCommandHandler(
         ICustomerRepository customerRepository,
         IIdentityService    identityService,
         IEmailService       emailService,
         IUnitOfWork         unitOfWork,
-        IMapper             mapper)
+        IMapper             mapper,
+        ILogger<CreateCustomerCommandHandler> logger)
     {
         _customerRepository = customerRepository;
         _identityService    = identityService;
         _emailService       = emailService;
         _unitOfWork         = unitOfWork;
         _mapper             = mapper;
+        _logger             = logger;
     }
 
     public async Task<CreateCustomerResponseDto> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
@@ -80,20 +84,35 @@ public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerComman
         await _customerRepository.AddAsync(customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // 4. Enviar credenciales por email (fire — no bloquea si falla)
-        _ = _emailService.SendAsync(
-            to:      request.Email,
-            subject: "Bienvenido a MyCarApp — tus credenciales de acceso",
-            htmlBody: BuildWelcomeEmail(request.FirstName, request.Email, tempPassword),
-            cancellationToken: CancellationToken.None);
+        // 4. Enviar credenciales por email. Fire-and-forget para no bloquear al admin,
+        // pero CON try/catch + log — sin esto, un fallo de SMTP (contraseña mal
+        // configurada, etc.) desaparece sin dejar rastro y el cliente nunca sabe
+        // que no le llegaron sus credenciales.
+        _ = SendWelcomeEmailAsync(request.Email, request.FirstName, tempPassword);
 
         var dto = _mapper.Map<CustomerDto>(customer);
         return new CreateCustomerResponseDto(dto, tempPassword);
     }
 
+    private async Task SendWelcomeEmailAsync(string email, string firstName, string tempPassword)
+    {
+        try
+        {
+            await _emailService.SendAsync(
+                to:       email,
+                subject:  "Bienvenido a GB Service — tus credenciales de acceso",
+                htmlBody: BuildWelcomeEmail(firstName, email, tempPassword),
+                cancellationToken: CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error enviando email de bienvenida a {Email}", email);
+        }
+    }
+
     private static string BuildWelcomeEmail(string firstName, string email, string tempPassword) => $"""
         <h2>Hola, {firstName}!</h2>
-        <p>Tu cuenta en <strong>MyCarApp</strong> fue creada. Podés acceder con las siguientes credenciales:</p>
+        <p>Tu cuenta en <strong>GB Service</strong> fue creada. Podés acceder con las siguientes credenciales:</p>
         <ul>
           <li><strong>Email:</strong> {email}</li>
           <li><strong>Contraseña temporal:</strong> {tempPassword}</li>

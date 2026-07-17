@@ -103,7 +103,7 @@ public sealed class QuoteDeliveryService : IQuoteDeliveryService
         {
             await _emailService.SendAsync(
                 to:                to,
-                subject:           $"Presupuesto para su vehículo {brand} {model} — MyCarApp",
+                subject:           $"Presupuesto para su vehículo {brand} {model} — GB Service",
                 htmlBody:          BuildBody(recipientName, brand, model, totalAmount, approvalLink),
                 attachment:        pdfBytes,
                 attachmentName:    $"Presupuesto-{licensePlate}-{DateTime.UtcNow:yyyyMMdd}.pdf",
@@ -130,6 +130,6 @@ public sealed class QuoteDeliveryService : IQuoteDeliveryService
           Este enlace es válido por 30 días. Si no solicitaste este presupuesto, ignorá este mensaje.
         </p>
         <br>
-        <p><em>MyCarApp — Taller de Servicios Automotores</em></p>
+        <p><em>GB Service — Taller de Servicios Automotores</em></p>
         """;
 }

@@ -28,7 +28,7 @@ public class QuotePdfService : IPdfService
                     {
                         row.RelativeItem().Column(c =>
                         {
-                            c.Item().Text("MyCarApp").Bold().FontSize(22).FontColor("#1a1a2e");
+                            c.Item().Text("GB Service").Bold().FontSize(22).FontColor("#1a1a2e");
                             c.Item().Text("Taller de Servicios Automotores").FontSize(11).FontColor("#555");
                         });
 
@@ -203,7 +203,7 @@ public class QuotePdfService : IPdfService
                 {
                     col.Item().LineHorizontal(0.5f).LineColor("#ccc");
                     col.Item().PaddingTop(4).AlignCenter()
-                        .Text("MyCarApp — Sistema de Gestión de Taller")
+                        .Text("GB Service — Sistema de Gestión de Taller")
                         .FontSize(8).FontColor("#aaa");
                 });
             });
