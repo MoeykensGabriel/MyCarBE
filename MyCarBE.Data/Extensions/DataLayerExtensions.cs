@@ -98,31 +98,43 @@ public static class DataLayerExtensions
     }
 
     /// <summary>
-    /// Resuelve la connection string en este orden:
-    ///   1. ConnectionStrings:DefaultConnection (appsettings / env ConnectionStrings__DefaultConnection)
-    ///   2. DATABASE_URL formato URI (postgresql://user:pass@host:port/db) — es lo que
-    ///      inyecta Railway y Npgsql NO lo entiende directo, así que lo convertimos
-    ///      a clave-valor con SSL requerido (Railway/managed Postgres lo exige).
+    /// Resuelve la connection string Postgres desde las variables que puede exponer
+    /// Railway (CONNECTION_STRING / DATABASE_URL / DATABASE_PUBLIC_URL) o appsettings
+    /// (DefaultConnection) en local. Railway la entrega como URI (postgresql://...),
+    /// formato que Npgsql NO parsea: se convierte a key=value con SslMode.Prefer
+    /// (negocia SSL — lo usa en el proxy público que lo exige y funciona en la red
+    /// interna). Mismo patrón que GestionPGB, ya probado en producción.
     /// </summary>
     private static string? ResolveConnectionString(IConfiguration configuration)
     {
-        var direct = configuration.GetConnectionString("DefaultConnection");
-        if (!string.IsNullOrWhiteSpace(direct))
-            return direct;
+        static string? NonEmpty(string? v) => string.IsNullOrWhiteSpace(v) ? null : v;
 
-        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
-                          ?? configuration["DATABASE_URL"];
-        if (string.IsNullOrWhiteSpace(databaseUrl))
+        var raw = NonEmpty(Environment.GetEnvironmentVariable("CONNECTION_STRING"))
+               ?? NonEmpty(Environment.GetEnvironmentVariable("DATABASE_URL"))
+               ?? NonEmpty(Environment.GetEnvironmentVariable("DATABASE_PUBLIC_URL"))
+               ?? NonEmpty(configuration.GetConnectionString("DefaultConnection"));
+
+        if (string.IsNullOrWhiteSpace(raw))
             return null; // EF tirará su error estándar de connection string faltante
 
-        var uri      = new Uri(databaseUrl);
+        // Ya viene en formato key=value (local) → sin cambios.
+        if (!raw.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+            !raw.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+            return raw;
+
+        var uri      = new Uri(raw);
         var userInfo = uri.UserInfo.Split(':', 2);
 
-        return $"Host={uri.Host};" +
-               $"Port={(uri.Port > 0 ? uri.Port : 5432)};" +
-               $"Database={uri.AbsolutePath.TrimStart('/')};" +
-               $"Username={Uri.UnescapeDataString(userInfo[0])};" +
-               $"Password={(userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty)};" +
-               "SSL Mode=Require;Trust Server Certificate=true";
+        var csb = new Npgsql.NpgsqlConnectionStringBuilder
+        {
+            Host     = uri.Host,
+            Port     = uri.Port > 0 ? uri.Port : 5432,
+            Username = Uri.UnescapeDataString(userInfo[0]),
+            Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty,
+            Database = uri.AbsolutePath.TrimStart('/'),
+            SslMode  = Npgsql.SslMode.Prefer,
+        };
+
+        return csb.ConnectionString;
     }
 }
