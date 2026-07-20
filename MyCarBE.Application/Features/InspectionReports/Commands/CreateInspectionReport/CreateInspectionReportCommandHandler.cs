@@ -47,21 +47,32 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
 
     public async Task<InspectionReportDto> Handle(CreateInspectionReportCommand request, CancellationToken cancellationToken)
     {
-        var mechanicId = _currentUser.MechanicId
-            ?? throw new ForbiddenException("Solo los mecánicos pueden crear reportes de inspección.");
+        // Quién reporta: el mecánico del área, o la oficina (admin/recepción) cuando
+        // inspecciona ella misma — taller chico, o ningún mecánico del área disponible.
+        // La oficina no tiene entidad Mechanic, así que el reporte queda con MechanicId
+        // null: lo firma la oficina, igual que "sin novedades" y las áreas omitidas.
+        var mechanicId = _currentUser.MechanicId;
+        var isOffice   = _currentUser.IsAdmin || _currentUser.IsReceptionist;
 
-        // Mecánico con sus áreas eager-loaded
-        var mechanic = await _mechanicRepository.GetByIdWithAreasAsync(mechanicId, cancellationToken)
-            ?? throw new NotFoundException(nameof(Mechanic), mechanicId);
+        if (mechanicId is null && !isOffice)
+            throw new ForbiddenException("Solo los mecánicos o la oficina pueden crear reportes de inspección.");
 
-        if (!mechanic.IsActive)
-            throw new ForbiddenException("Mecánico desactivado no puede reportar inspecciones.");
+        // Mecánico con sus áreas eager-loaded (null cuando reporta el admin)
+        Mechanic? mechanic = null;
+        if (mechanicId is not null)
+        {
+            mechanic = await _mechanicRepository.GetByIdWithAreasAsync(mechanicId.Value, cancellationToken)
+                ?? throw new NotFoundException(nameof(Mechanic), mechanicId.Value);
 
-        // Validar que el mecánico pueda reportar el área:
-        // - Generalista: cualquier área activa (la resolvemos del catálogo de áreas).
-        // - Normal: solo las áreas que tiene asignadas.
+            if (!mechanic.IsActive)
+                throw new ForbiddenException("Mecánico desactivado no puede reportar inspecciones.");
+        }
+
+        // Validar que se pueda reportar el área:
+        // - Admin o mecánico generalista: cualquier área activa (la resolvemos del catálogo).
+        // - Mecánico normal: solo las áreas que tiene asignadas.
         Domain.Entities.Area area;
-        if (mechanic.IsGeneralist)
+        if (mechanic is null || mechanic.IsGeneralist)
         {
             area = await _areaRepository.GetByIdAsync(request.AreaId, cancellationToken)
                 ?? throw new NotFoundException(nameof(Domain.Entities.Area), request.AreaId);
@@ -111,7 +122,7 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
             Id           = Guid.NewGuid(),
             WorkOrderId  = workOrder.Id,
             AreaId       = request.AreaId,
-            MechanicId   = mechanic.Id,
+            MechanicId   = mechanic?.Id,
             Findings     = string.IsNullOrWhiteSpace(request.Findings) ? null : request.Findings.Trim(),
             HasIssue     = request.HasIssue,
             IsNoFindings = false,

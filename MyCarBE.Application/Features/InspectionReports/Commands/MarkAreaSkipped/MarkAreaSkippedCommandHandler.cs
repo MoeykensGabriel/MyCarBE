@@ -38,7 +38,7 @@ public class MarkAreaSkippedCommandHandler : IRequestHandler<MarkAreaSkippedComm
 
         if (workOrder.CurrentStatus != WorkOrderStatus.UnderInspection)
             throw new BadRequestException(
-                $"Solo se puede omitir un área en órdenes con estado UnderInspection " +
+                $"Solo se puede postergar un área en órdenes con estado UnderInspection " +
                 $"(estado actual: {workOrder.CurrentStatus}).");
 
         var area = await _areaRepository.GetByIdAsync(request.AreaId, cancellationToken)

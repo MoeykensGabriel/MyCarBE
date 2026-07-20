@@ -561,11 +561,11 @@ public class WorkOrdersController : ControllerBase
     }
 
     /// <summary>
-    /// El admin marca un área como "sin hallazgos" (útil cuando no hay mecánico
+    /// La oficina marca un área como "sin hallazgos" (útil cuando no hay mecánico
     /// asignado al área o nadie llegó a reportar). Crea un InspectionReport con IsNoFindings=true.
     /// </summary>
     [HttpPost("{id:guid}/inspection-reports/no-findings")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -632,11 +632,11 @@ public class WorkOrdersController : ControllerBase
         decimal? DepositAmount);
 
     /// <summary>
-    /// El admin cierra la inspección colectiva — requiere que todas las áreas activas
+    /// La oficina cierra la inspección colectiva — requiere que todas las áreas activas
     /// tengan un reporte (de mecánico o sin hallazgos). Transiciona a Diagnosing.
     /// </summary>
     [HttpPost("{id:guid}/close-inspection")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

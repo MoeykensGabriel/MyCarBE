@@ -20,9 +20,13 @@ public class InspectionReportsController : ControllerBase
     /// <summary>
     /// El mecánico crea un reporte sobre un área de una orden.
     /// Validaciones: debe estar asignado al área; solo UN reporte por (orden, área).
+    ///
+    /// La oficina (admin o recepción) también puede reportar — inspecciona ella misma
+    /// cuando no hay mecánico del área disponible. Entra como generalista (cualquier área
+    /// activa) y el reporte queda con MechanicId null, o sea firmado por la oficina.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Mechanic")]
+    [Authorize(Roles = "Admin,Receptionist,Mechanic")]
     [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

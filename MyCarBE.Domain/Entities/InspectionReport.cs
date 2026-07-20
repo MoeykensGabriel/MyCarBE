@@ -8,6 +8,8 @@ namespace MyCarBE.Domain.Entities;
 /// Modelo: una orden en estado UnderInspection necesita "cubrir" cada área aplicable.
 /// Una área queda cubierta cuando existe UN InspectionReport para esa (WorkOrderId, AreaId):
 ///   - Si un mecánico del área reportó → MechanicId poblado, Findings con texto, HasIssue indica si hay problema.
+///   - Si la oficina (admin/recepción) inspeccionó ella misma (no había mecánico del área
+///     disponible) → MechanicId=null pero con Findings/HasIssue como cualquier reporte.
 ///   - Si el admin cierra el área sin hallazgos (no había mecánico, o nadie reportó) →
 ///     IsNoFindings=true, MechanicId=null, Findings=null.
 ///
@@ -22,7 +24,8 @@ public class InspectionReport : BaseEntity
     public Guid AreaId { get; set; }
     public Area Area { get; set; } = null!;
 
-    /// <summary>Mecánico que reportó. Null si IsNoFindings=true (lo cerró el admin).</summary>
+    /// <summary>Mecánico que reportó. Null cuando el reporte lo firmó la oficina
+    /// (el admin inspeccionó él mismo, o cerró el área con IsNoFindings/IsSkipped).</summary>
     public Guid? MechanicId { get; set; }
     public Mechanic? Mechanic { get; set; }
 
