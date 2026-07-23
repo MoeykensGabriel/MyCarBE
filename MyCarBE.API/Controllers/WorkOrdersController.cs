@@ -25,6 +25,7 @@ using MyCarBE.Application.Features.WorkOrders.Commands.UploadWorkOrderPhoto;
 using MyCarBE.Application.Common.Models;
 using MyCarBE.Application.Features.WorkOrders.DTOs;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetApprovalInfo;
+using MyCarBE.Application.Features.WorkOrders.Queries.GetQuoteApprovalLink;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderById;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderQuotePdf;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrders;
@@ -383,6 +384,24 @@ public class WorkOrdersController : ControllerBase
     {
         var pdfBytes = await _sender.Send(new GetWorkOrderQuotePdfQuery(id), cancellationToken);
         return File(pdfBytes, "application/pdf", $"Presupuesto-{id.ToString()[..8].ToUpper()}.pdf");
+    }
+
+    /// <summary>
+    /// Devuelve el link de aprobación vigente del presupuesto, para reenviárselo al
+    /// cliente por WhatsApp cuando el email no llega. Solo lee el token existente:
+    /// no genera uno nuevo ni modifica la orden, así que el link que ya tenga el
+    /// cliente sigue funcionando.
+    ///
+    /// Responde 200 con los campos en null si no hay token activo (nunca se envió el
+    /// presupuesto, venció, o el cliente ya decidió). Admin y Recepción.
+    /// </summary>
+    [HttpGet("{id:guid}/approval-link")]
+    [Authorize(Roles = "Admin,Receptionist")]
+    [ProducesResponseType(typeof(QuoteApprovalLinkDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetQuoteApprovalLink(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetQuoteApprovalLinkQuery(id), cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>
