@@ -9,10 +9,8 @@ public class MarkAreaSkippedCommandValidator : AbstractValidator<MarkAreaSkipped
         RuleFor(x => x.WorkOrderId).NotEmpty();
         RuleFor(x => x.AreaId).NotEmpty();
 
-        // El motivo es la constancia de por qué no se inspeccionó — no puede faltar.
+        // El motivo es opcional (se posterga de un solo click). Si lo cargan, se acota.
         RuleFor(x => x.Reason)
-            .NotEmpty().WithMessage("Indicá el motivo por el que se posterga la inspección de esta área.")
-            .MinimumLength(5).WithMessage("El motivo debe tener al menos 5 caracteres.")
             .MaximumLength(500);
     }
 }

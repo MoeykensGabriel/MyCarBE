@@ -31,6 +31,7 @@ using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderQuotePdf;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrders;
 using MyCarBE.Application.Features.InspectionReports.Commands.MarkAreaNoFindings;
 using MyCarBE.Application.Features.InspectionReports.Commands.MarkAreaSkipped;
+using MyCarBE.Application.Features.InspectionReports.Commands.ReopenInspectionArea;
 using MyCarBE.Application.Features.InspectionReports.DTOs;
 using MyCarBE.Application.Features.InspectionReports.Queries.GetInspectionReportsByWorkOrder;
 using MyCarBE.Domain.Enums;
@@ -623,7 +624,26 @@ public class WorkOrdersController : ControllerBase
         return Ok(result);
     }
 
-    public record MarkAreaSkippedBody(Guid AreaId, string Reason);
+    public record MarkAreaSkippedBody(Guid AreaId, string? Reason);
+
+    /// <summary>
+    /// Deshace una marca de la oficina sobre un área ("sin novedades" o "postergada") y
+    /// la deja otra vez pendiente. Corrige un click por error. Solo mientras la orden
+    /// sigue en inspección, y solo sobre marcas de oficina (no reportes de mecánico).
+    /// </summary>
+    [HttpDelete("{id:guid}/inspection-reports/{areaId:guid}")]
+    [Authorize(Roles = "Admin,Receptionist")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReopenInspectionArea(
+        Guid id,
+        Guid areaId,
+        CancellationToken cancellationToken)
+    {
+        await _sender.Send(new ReopenInspectionAreaCommand(id, areaId), cancellationToken);
+        return NoContent();
+    }
 
     /// <summary>
     /// La oficina define la condición de venta de los repuestos (CC / OC + número /

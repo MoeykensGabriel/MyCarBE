@@ -33,8 +33,12 @@ public class InspectionReportConfiguration : IEntityTypeConfiguration<Inspection
                .OnDelete(DeleteBehavior.SetNull)
                .IsRequired(false);
 
-        // Unique: una orden solo puede tener UN reporte por área
-        builder.HasIndex(r => new { r.WorkOrderId, r.AreaId }).IsUnique();
+        // Unique: una orden solo puede tener UN reporte VIVO por área. El filtro por
+        // IsDeleted lo hace parcial (como en batería/cubiertas): al deshacer una marca de
+        // oficina (soft-delete) el área puede volver a marcarse sin chocar con el índice.
+        builder.HasIndex(r => new { r.WorkOrderId, r.AreaId })
+               .IsUnique()
+               .HasFilter("\"IsDeleted\" = FALSE");
         builder.HasIndex(r => r.MechanicId);
 
         // Query filter: el reporte hereda el soft-delete de la WorkOrder

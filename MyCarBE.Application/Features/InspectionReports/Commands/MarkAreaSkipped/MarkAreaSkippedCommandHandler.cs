@@ -59,7 +59,7 @@ public class MarkAreaSkippedCommandHandler : IRequestHandler<MarkAreaSkippedComm
             HasIssue     = false,
             IsNoFindings = false,
             IsSkipped    = true,
-            SkipReason   = request.Reason.Trim(),
+            SkipReason   = string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim(),
         };
 
         await _repository.AddAsync(report, cancellationToken);
