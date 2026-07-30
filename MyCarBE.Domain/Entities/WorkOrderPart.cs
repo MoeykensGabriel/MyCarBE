@@ -6,7 +6,12 @@ namespace MyCarBE.Domain.Entities;
 /// <summary>
 /// Repuesto cargado en una orden de trabajo. A diferencia de WorkOrderService (mano de obra),
 /// los repuestos viven solo en la orden — no hay catálogo de repuestos en MyCarApp. El código
-/// de producto (ProductCode) referencia el barcode del Sistema de Stock externo (GestionPGB).
+/// de producto (ProductCode) es el ID del catálogo del PROVEEDOR, que en el Sistema de Stock
+/// externo (GestionPGB) se guarda como Product.ItemName.
+///
+/// No es el código de barras: al armar el presupuesto el taller no tiene el repuesto en la
+/// mano, así que el barcode todavía no existe para nosotros. GestionPGB resuelve el producto
+/// por ItemName y usa el barcode solo como fallback.
 ///
 /// Si ProductCode es null, el repuesto es "custom" (compra suelta del taller, no pasa por el
 /// depósito) y no se envía al Sistema de Stock al aprobar el presupuesto.
@@ -17,8 +22,8 @@ public class WorkOrderPart : BaseEntity
     public WorkOrder WorkOrder { get; set; } = null!;
 
     /// <summary>
-    /// Código de barras / código de proveedor en GestionPGB. Si es null el repuesto es custom
-    /// y no se envía al depósito.
+    /// ID del catálogo del proveedor (= Product.ItemName en GestionPGB). Si es null el
+    /// repuesto es custom y no se envía al depósito.
     /// </summary>
     public string? ProductCode { get; set; }
 

@@ -16,7 +16,10 @@ public class PartsStockRequestItem : BaseEntity
     /// <summary>Traceability: de qué WorkOrderPart salió este item.</summary>
     public Guid WorkOrderPartId { get; set; }
 
-    /// <summary>Código GestionPGB del repuesto (snapshot, requerido en items del pedido).</summary>
+    /// <summary>
+    /// ID del catálogo del proveedor (= Product.ItemName en GestionPGB), snapshot del
+    /// WorkOrderPart. Requerido en items del pedido — no es el código de barras.
+    /// </summary>
     public string ProductCode { get; set; } = string.Empty;
 
     /// <summary>Nombre legible (snapshot para evitar joins en la pantalla de seguimiento).</summary>

@@ -114,7 +114,8 @@ public class HttpStockService : IStockService
             }
 
             // Mapear cada item devuelto al ID interno nuestro vía matching por ProductCode.
-            // (GestionPGB no conoce nuestros Guids; cruzamos por código de barras.)
+            // (GestionPGB no conoce nuestros Guids; cruzamos por el código de proveedor,
+            // que es el mismo string que le mandamos.)
             var initialStatuses = new List<StockItemInitialStatus>();
             foreach (var ourItem in request.Items)
             {
@@ -165,7 +166,7 @@ public class HttpStockService : IStockService
         {
             "Available"          => (StockRequestItemStatus.Available, null),
             "Shortage"           => (StockRequestItemStatus.Missing,   $"Falta {item.ShortageQuantity} unidad(es) — el depósito debe comprar."),
-            "NotFound"           => (StockRequestItemStatus.Missing,   "El código no existe en el depósito. Verificar con la oficina."),
+            "NotFound"           => (StockRequestItemStatus.Missing,   "El código de proveedor no figura en el depósito. Verificar con la oficina."),
             "PurchasedInTransit" => (StockRequestItemStatus.InTransit, null),
             "Delivered"          => (StockRequestItemStatus.Delivered, null),
             _                    => (StockRequestItemStatus.PendingReview, $"Estado desconocido: {item.Status}"),
