@@ -58,14 +58,18 @@ public class WorkOrderServicesController : ControllerBase
     }
 
     /// <summary>
-    /// El mecánico se auto-asigna un servicio del pool (Unassigned → Pending).
+    /// El ejecutante se auto-asigna un servicio del pool (Unassigned → Pending).
     /// Requiere que la WO esté en InProgress y que el servicio esté Approved.
-    /// Devuelve 409 Conflict si otro mecánico lo tomó primero (race condition).
+    /// Devuelve 409 Conflict si otro lo tomó primero (race condition).
+    ///
+    /// Admin incluido: si habilitó su perfil de ejecutante trabaja como un mecánico más
+    /// (lo toma desde la ficha de la orden). Sin perfil habilitado recibe 403.
     /// </summary>
     [HttpPost("{id:guid}/claim")]
-    [Authorize(Roles = "Mechanic")]
+    [Authorize(Roles = "Admin,Mechanic")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Claim(Guid id, CancellationToken cancellationToken)
@@ -75,13 +79,14 @@ public class WorkOrderServicesController : ControllerBase
     }
 
     /// <summary>
-    /// El mecánico libera un servicio que tomó pero todavía no aceptó (Pending → Unassigned).
+    /// El ejecutante libera un servicio que tomó pero todavía no aceptó (Pending → Unassigned).
     /// Vuelve al pool. Solo el dueño actual del Pending puede liberarlo.
     /// </summary>
     [HttpPost("{id:guid}/release")]
-    [Authorize(Roles = "Mechanic")]
+    [Authorize(Roles = "Admin,Mechanic")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Release(Guid id, CancellationToken cancellationToken)
     {
@@ -89,12 +94,14 @@ public class WorkOrderServicesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>El mecánico asignado acepta el trabajo (Pending → Accepted).</summary>
+    /// <summary>El ejecutante asignado acepta el trabajo (Pending → Accepted).</summary>
     [HttpPost("{id:guid}/accept")]
-    [Authorize(Roles = "Mechanic")]
+    [Authorize(Roles = "Admin,Mechanic")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Accept(Guid id, CancellationToken cancellationToken)
     {
         await _sender.Send(new AcceptServiceCommand(id), cancellationToken);
@@ -117,11 +124,15 @@ public class WorkOrderServicesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>El mecánico finaliza el servicio. Notes obligatorio (mínimo 10 chars).</summary>
+    /// <summary>
+    /// El ejecutante finaliza su propio servicio. Notes obligatorio (mínimo 10 chars).
+    /// Es la única vía que persiste Findings — complete-as-workshop solo guarda las notas.
+    /// </summary>
     [HttpPost("{id:guid}/complete")]
-    [Authorize(Roles = "Mechanic")]
+    [Authorize(Roles = "Admin,Mechanic")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Complete(Guid id, [FromBody] CompleteBody body, CancellationToken cancellationToken)
     {
@@ -130,8 +141,11 @@ public class WorkOrderServicesController : ControllerBase
     }
 
     /// <summary>
-    /// Admin u oficina finaliza un trabajo en curso en nombre del taller — para destrabar
-    /// servicios cuyo mecánico no va a continuar. Notes obligatorio (mínimo 10 chars).
+    /// Admin u oficina finaliza en nombre del taller un trabajo de OTRO — para destrabar
+    /// servicios cuyo mecánico no va a continuar. Vale tanto para trabajos en curso (Accepted)
+    /// como para los que quedaron tomados y nunca arrancaron (Pending): un Pending abandonado
+    /// traba la orden entera, que no puede pasar a Completed con servicios sin finalizar.
+    /// Notes obligatorio (mínimo 10 chars).
     /// </summary>
     [HttpPost("{id:guid}/complete-as-workshop")]
     [Authorize(Roles = "Admin,Receptionist")]

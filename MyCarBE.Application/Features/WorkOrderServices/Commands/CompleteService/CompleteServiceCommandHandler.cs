@@ -26,20 +26,34 @@ public class CompleteServiceCommandHandler : IRequestHandler<CompleteServiceComm
     public async Task Handle(CompleteServiceCommand request, CancellationToken cancellationToken)
     {
         var mechanicId = _currentUser.MechanicId
-            ?? throw new ForbiddenException("Solo los mecánicos pueden finalizar trabajos.");
+            ?? throw new ForbiddenException(
+                "Tu sesión no tiene perfil de ejecutante. Cerrá sesión y volvé a entrar para finalizar trabajos.");
 
         var service = await _workOrderRepository.GetServiceByIdAsync(request.WorkOrderServiceId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrderService), request.WorkOrderServiceId);
 
-        // Ownership: si el servicio no le pertenece, 404 (leak prevention)
+        // Ownership: 404 para el mecánico (leak prevention), 403 explicativo para el admin.
         if (service.AssignedMechanicId != mechanicId)
+        {
+            if (_currentUser.IsAdmin)
+                throw new ForbiddenException(
+                    "Este trabajo está asignado a otro mecánico. Reasignalo o finalizalo por taller.");
+
             throw new NotFoundException(nameof(WorkOrderService), request.WorkOrderServiceId);
+        }
 
         if (service.WorkOrder.CurrentStatus != WorkOrderStatus.InProgress)
             throw new BadRequestException(
                 $"La orden está en '{service.WorkOrder.CurrentStatus}'. Solo se pueden finalizar trabajos cuando la orden está en progreso.");
 
-        service.CompleteByMechanic(mechanicId, request.Notes, request.Findings);
+        try
+        {
+            service.CompleteByMechanic(mechanicId, request.Notes, request.Findings);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new BadRequestException(ex.Message);
+        }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }

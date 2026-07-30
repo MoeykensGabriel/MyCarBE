@@ -26,7 +26,9 @@ public interface ICurrentUserService
     Guid? FleetId { get; }
 
     /// <summary>
-    /// Id del Mechanic vinculado al usuario. Solo presente cuando el rol es Mechanic.
+    /// Id del Mechanic vinculado al usuario. No depende del rol sino de tener un perfil de
+    /// ejecutante activo: lo tiene todo Mechanic, y también el Admin, a quien se le crea el
+    /// suyo en el primer login para que pueda hacer trabajos con sus propias manos.
     /// </summary>
     Guid? MechanicId { get; }
 }

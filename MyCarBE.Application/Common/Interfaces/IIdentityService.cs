@@ -15,6 +15,14 @@ public interface IIdentityService
     Task<AuthResponseDto?> LoginAsync(string email, string password, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Emite una sesión nueva (mismo formato que el login) para un usuario ya autenticado,
+    /// sin volver a pedirle la contraseña. Sirve para refrescar los claims de dominio cuando
+    /// cambian en caliente — p. ej. cuando un Admin habilita su perfil de ejecutante y necesita
+    /// el claim mechanicId sin cerrar sesión.
+    /// </summary>
+    Task<AuthResponseDto> IssueSessionAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Crea un ApplicationUser con el rol indicado y una contraseña temporal generada.
     /// Retorna el UserId y la contraseña temporal para que el Admin se la entregue al cliente.
     /// </summary>

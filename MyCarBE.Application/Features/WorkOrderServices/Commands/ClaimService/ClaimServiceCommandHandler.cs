@@ -26,7 +26,8 @@ public class ClaimServiceCommandHandler : IRequestHandler<ClaimServiceCommand>
     public async Task Handle(ClaimServiceCommand request, CancellationToken cancellationToken)
     {
         var mechanicId = _currentUser.MechanicId
-            ?? throw new ForbiddenException("Solo los mecánicos pueden tomar trabajos del pool.");
+            ?? throw new ForbiddenException(
+                "Tu sesión no tiene perfil de ejecutante. Cerrá sesión y volvé a entrar para tomar trabajos.");
 
         var service = await _workOrderRepository.GetServiceByIdAsync(request.WorkOrderServiceId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrderService), request.WorkOrderServiceId);

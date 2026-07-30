@@ -205,15 +205,23 @@ public class WorkOrderService : BaseEntity
 
     /// <summary>
     /// La oficina (admin/recepción) finaliza el servicio en nombre del taller — p. ej. cuando
-    /// el mecánico que lo aceptó no va a continuar (conflicto, renuncia). Solo válido desde
-    /// Accepted (trabajo en curso); si todavía está Pending corresponde desasignar, no finalizar.
-    /// Se mantiene AssignedMechanicId para conservar el historial de quién lo trabajó.
+    /// el mecánico que lo tomó no va a continuar (conflicto, renuncia) o directamente nunca
+    /// llegó a iniciarlo. Válido desde Pending (tomado pero sin arrancar) y desde Accepted
+    /// (trabajo en curso). Sin esto, un Pending abandonado traba la orden entera: WorkOrder
+    /// no puede pasar a Completed mientras quede un servicio sin finalizar.
+    ///
+    /// Se mantiene AssignedMechanicId para conservar el historial de quién lo trabajó, y
+    /// AcceptedAt queda como estaba: si viene de Pending sigue en null, porque nadie lo inició.
     /// </summary>
     public void CompleteByWorkshop(string notes)
     {
-        if (AssignmentStatus != WorkOrderServiceAssignmentStatus.Accepted)
+        if (AssignmentStatus == WorkOrderServiceAssignmentStatus.Unassigned)
             throw new InvalidOperationException(
-                $"Solo se puede finalizar un trabajo en curso (Accepted). Estado actual: {AssignmentStatus}.");
+                "No hay trabajo asignado que finalizar: asignalo o tomalo primero.");
+
+        if (AssignmentStatus == WorkOrderServiceAssignmentStatus.Completed)
+            throw new InvalidOperationException(
+                $"Este servicio ya fue finalizado. Estado actual: {AssignmentStatus}.");
 
         if (string.IsNullOrWhiteSpace(notes))
             throw new InvalidOperationException("Las notas son obligatorias al finalizar un servicio.");

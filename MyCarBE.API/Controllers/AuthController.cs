@@ -6,6 +6,7 @@ using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Features.Auth.Commands.AdminResetPassword;
 using MyCarBE.Application.Features.Auth.Commands.ChangePassword;
 using MyCarBE.Application.Features.Auth.Commands.Login;
+using MyCarBE.Application.Features.Auth.Commands.RefreshSession;
 
 namespace MyCarBE.API.Controllers;
 
@@ -57,6 +58,22 @@ public class AuthController : ControllerBase
             CustomerId      = _currentUser.CustomerId,
             FleetId         = _currentUser.FleetId
         });
+    }
+
+    /// <summary>
+    /// Reemite la sesión del usuario autenticado (mismo formato que el login) para que
+    /// recoja claims que aparecieron después de emitido el token — el mechanicId del admin,
+    /// cuyo perfil de ejecutante se crea en su primer login. Sin esto habría que salir y
+    /// volver a entrar para poder tomar trabajos.
+    /// </summary>
+    [HttpPost("session/refresh")]
+    [Authorize]
+    [ProducesResponseType(typeof(Application.Features.Auth.DTOs.AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshSession(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new RefreshSessionCommand(), cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>
