@@ -39,11 +39,13 @@ public class InspectionReportsController : ControllerBase
     }
 
     /// <summary>
-    /// El mecánico que creó el reporte lo puede editar (Findings, HasIssue).
-    /// No se puede editar un reporte marcado como "sin hallazgos" por el admin.
+    /// Edita el reporte (Findings, HasIssue, propuestas). El mecánico solo puede editar los
+    /// suyos; el admin corrige cualquiera, sin cambiar la autoría.
+    /// Solo mientras la orden siga en inspección, y nunca sobre un reporte marcado
+    /// como "sin hallazgos".
     /// </summary>
     [HttpPatch("{id:guid}")]
-    [Authorize(Roles = "Mechanic")]
+    [Authorize(Roles = "Admin,Mechanic")]
     [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

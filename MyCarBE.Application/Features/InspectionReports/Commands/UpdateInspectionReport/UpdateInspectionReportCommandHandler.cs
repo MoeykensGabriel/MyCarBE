@@ -36,12 +36,16 @@ public class UpdateInspectionReportCommandHandler : IRequestHandler<UpdateInspec
         var report = await _repository.GetByIdWithProposalsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(InspectionReport), request.Id);
 
-        // Ownership: solo el mecánico que lo creó puede editarlo
-        var mechanicId = _currentUser.MechanicId
-            ?? throw new ForbiddenException("Solo los mecánicos pueden editar reportes de inspección.");
+        // Ownership: cada mecánico edita solo lo suyo. El admin corrige cualquier reporte —
+        // la autoría no cambia (report.MechanicId queda como está), solo el contenido.
+        if (!_currentUser.IsAdmin)
+        {
+            var mechanicId = _currentUser.MechanicId
+                ?? throw new ForbiddenException("Solo los mecánicos pueden editar reportes de inspección.");
 
-        if (report.MechanicId != mechanicId)
-            throw new ForbiddenException("Solo el mecánico que creó el reporte puede editarlo.");
+            if (report.MechanicId != mechanicId)
+                throw new ForbiddenException("Solo el mecánico que creó el reporte puede editarlo.");
+        }
 
         // No se permite editar reportes "sin hallazgos" (los creó el admin, no un mecánico — defensa extra)
         if (report.IsNoFindings)
