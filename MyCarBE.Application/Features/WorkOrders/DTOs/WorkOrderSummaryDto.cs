@@ -5,6 +5,8 @@ namespace MyCarBE.Application.Features.WorkOrders.DTOs;
 /// <summary>Lightweight DTO used in list responses.</summary>
 public record WorkOrderSummaryDto(
     Guid            Id,
+    /// <summary>Número visible de la orden — es lo que se muestra y se busca. Ver WorkOrder.Number.</summary>
+    int             Number,
     Guid            VehicleId,
     string          VehicleBrand,
     string          VehicleModel,

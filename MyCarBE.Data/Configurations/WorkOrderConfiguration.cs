@@ -11,6 +11,18 @@ public class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
         builder.ToTable("WorkOrders");
         builder.HasKey(w => w.Id);
 
+        // Número visible de la orden. Lo genera Postgres (identity by default, arranca en 1000):
+        // "by default" y no "always" para que el backfill de la migración pueda escribir los
+        // números de las órdenes históricas. Nunca se modifica una vez asignado.
+        builder.Property(w => w.Number)
+               .UseIdentityByDefaultColumn()
+               .HasIdentityOptions(startValue: 1000, incrementBy: 1);
+
+        builder.Property(w => w.Number).Metadata.SetAfterSaveBehavior(
+            Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
+
+        builder.HasIndex(w => w.Number).IsUnique();
+
         builder.Property(w => w.TotalAmount).HasColumnType("numeric(18,2)");
         builder.Property(w => w.PurchaseOrderNumber).HasMaxLength(100);
         builder.Property(w => w.DepositAmount).HasColumnType("numeric(18,2)");

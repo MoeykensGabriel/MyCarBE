@@ -185,7 +185,15 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim().ToLower();
+
+            // Número de orden: es como la identifica el taller por teléfono, así que buscarlo
+            // tiene que dar exacto y no mezclado con patentes que contengan esos dígitos.
+            // Aceptamos el "#" que el usuario copia de la pantalla.
+            var numberTerm = term.TrimStart('#');
+            int? number = int.TryParse(numberTerm, out var parsed) ? parsed : null;
+
             query = query.Where(w =>
+                (number != null && w.Number == number) ||
                 w.Vehicle.LicensePlate.ToLower().Contains(term) ||
                 (w.CustomerAtEntry != null &&
                     (w.CustomerAtEntry.FirstName + " " + w.CustomerAtEntry.LastName).ToLower().Contains(term)) ||

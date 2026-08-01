@@ -383,8 +383,8 @@ public class WorkOrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadQuotePdf(Guid id, CancellationToken cancellationToken)
     {
-        var pdfBytes = await _sender.Send(new GetWorkOrderQuotePdfQuery(id), cancellationToken);
-        return File(pdfBytes, "application/pdf", $"Presupuesto-{id.ToString()[..8].ToUpper()}.pdf");
+        var result = await _sender.Send(new GetWorkOrderQuotePdfQuery(id), cancellationToken);
+        return File(result.Content, "application/pdf", $"Presupuesto-{result.OrderNumber}.pdf");
     }
 
     /// <summary>

@@ -5,6 +5,19 @@ namespace MyCarBE.Domain.Entities;
 
 public class WorkOrder : BaseEntity
 {
+    /// <summary>
+    /// Número de orden visible: es lo ÚNICO que ve el cliente y lo que se dicta por teléfono
+    /// ("orden 1042"). El Id sigue siendo Guid y sigue siendo la identidad real — rutas, FKs
+    /// y tokens de aprobación no lo tocan, así que el número no puede usarse para adivinar
+    /// órdenes ajenas.
+    ///
+    /// Lo asigna Postgres con una identity column arrancando en 1000, para que el taller no
+    /// arranque en "orden #1". Consecuencia esperada: una orden cancelada consume su número,
+    /// así que la secuencia puede saltar. Es lo correcto para auditoría — el número nunca se
+    /// reusa ni se reasigna.
+    /// </summary>
+    public int Number { get; set; }
+
     public Guid VehicleId { get; set; }
     public Vehicle Vehicle { get; set; } = null!;
 

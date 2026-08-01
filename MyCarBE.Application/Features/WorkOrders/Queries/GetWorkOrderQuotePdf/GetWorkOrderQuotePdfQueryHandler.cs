@@ -10,7 +10,7 @@ using MyCarBE.Domain.Enums;
 
 namespace MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderQuotePdf;
 
-public class GetWorkOrderQuotePdfQueryHandler : IRequestHandler<GetWorkOrderQuotePdfQuery, byte[]>
+public class GetWorkOrderQuotePdfQueryHandler : IRequestHandler<GetWorkOrderQuotePdfQuery, QuotePdfResult>
 {
     private readonly IWorkOrderRepository _workOrderRepository;
     private readonly IVehicleRepository   _vehicleRepository;
@@ -38,7 +38,7 @@ public class GetWorkOrderQuotePdfQueryHandler : IRequestHandler<GetWorkOrderQuot
         _mapper              = mapper;
     }
 
-    public async Task<byte[]> Handle(GetWorkOrderQuotePdfQuery request, CancellationToken cancellationToken)
+    public async Task<QuotePdfResult> Handle(GetWorkOrderQuotePdfQuery request, CancellationToken cancellationToken)
     {
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
@@ -97,6 +97,6 @@ public class GetWorkOrderQuotePdfQueryHandler : IRequestHandler<GetWorkOrderQuot
             RecipientName:  recipientName,
             RecipientEmail: recipientEmail);
 
-        return _pdfService.GenerateQuotePdf(pdfData);
+        return new QuotePdfResult(_pdfService.GenerateQuotePdf(pdfData), workOrder.Number);
     }
 }

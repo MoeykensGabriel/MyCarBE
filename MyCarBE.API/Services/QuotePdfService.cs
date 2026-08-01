@@ -35,7 +35,7 @@ public class QuotePdfService : IPdfService
                         row.ConstantItem(150).Column(c =>
                         {
                             c.Item().AlignRight().Text("PRESUPUESTO").Bold().FontSize(16).FontColor("#e63946");
-                            c.Item().AlignRight().Text($"Nº {wo.Id.ToString()[..8].ToUpper()}").FontSize(9).FontColor("#777");
+                            c.Item().AlignRight().Text($"Nº {wo.Number}").FontSize(9).FontColor("#777");
                             c.Item().AlignRight().Text($"Fecha: {wo.CreatedAt:dd/MM/yyyy}").FontSize(9);
                         });
                     });
