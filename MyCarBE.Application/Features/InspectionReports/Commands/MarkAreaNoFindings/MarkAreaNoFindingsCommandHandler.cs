@@ -36,19 +36,38 @@ public class MarkAreaNoFindingsCommandHandler : IRequestHandler<MarkAreaNoFindin
         var workOrder = await _workOrderRepository.GetByIdAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
-        if (workOrder.CurrentStatus != WorkOrderStatus.UnderInspection)
-            throw new BadRequestException(
-                $"Solo se puede marcar 'sin hallazgos' en órdenes con estado UnderInspection " +
-                $"(estado actual: {workOrder.CurrentStatus}).");
+        // Igual que CreateInspectionReport: canal inicial (UnderInspection) o canal TARDÍO
+        // sobre un área que quedó postergada. Acá el especialista miró y no encontró nada,
+        // que es lo que salda la deuda sin generar trabajo.
+        var isInitialInspection = workOrder.CurrentStatus == WorkOrderStatus.UnderInspection;
 
         var area = await _areaRepository.GetByIdAsync(request.AreaId, cancellationToken)
             ?? throw new NotFoundException(nameof(Area), request.AreaId);
 
-        if (await _repository.ExistsForAreaAsync(request.WorkOrderId, request.AreaId, cancellationToken))
-            throw new ConflictException(
-                nameof(InspectionReport),
-                "AreaId",
-                $"Ya existe un reporte para el área '{area.Name}' en esta orden.");
+        if (!isInitialInspection)
+        {
+            if (!workOrder.AcceptsLateInspection)
+                throw new BadRequestException(
+                    $"No se puede marcar 'sin hallazgos' con la orden en '{workOrder.CurrentStatus}'.");
+
+            if (!await _repository.IsAreaPendingForVehicleAsync(workOrder.VehicleId, request.AreaId, cancellationToken))
+                throw new BadRequestException(
+                    $"Con la inspección ya cerrada, el área '{area.Name}' solo se puede cerrar si había quedado postergada.");
+        }
+
+        // Un reporte vivo por (orden, área). En el canal tardío damos de baja la postergación
+        // que venimos a reemplazar — el índice único es parcial sobre IsDeleted.
+        var existing = await _repository.GetByWorkOrderAndAreaAsync(request.WorkOrderId, request.AreaId, cancellationToken);
+        if (existing is not null)
+        {
+            if (isInitialInspection || !existing.IsSkipped)
+                throw new ConflictException(
+                    nameof(InspectionReport),
+                    "AreaId",
+                    $"Ya existe un reporte para el área '{area.Name}' en esta orden.");
+
+            _repository.Delete(existing);
+        }
 
         var report = new InspectionReport
         {

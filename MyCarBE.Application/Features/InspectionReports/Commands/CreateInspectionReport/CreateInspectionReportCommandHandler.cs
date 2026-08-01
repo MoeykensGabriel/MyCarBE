@@ -105,17 +105,41 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
         var workOrder = await _workOrderRepository.GetByIdAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
-        if (workOrder.CurrentStatus != Domain.Enums.WorkOrderStatus.UnderInspection)
-            throw new BadRequestException(
-                $"Solo se puede reportar inspección en órdenes con estado UnderInspection. " +
-                $"Estado actual: {workOrder.CurrentStatus}.");
+        // Dos canales de entrada:
+        //   - Inspección inicial: la orden está en UnderInspection y se reporta cualquier área.
+        //   - Inspección TARDÍA: la inspección ya cerró, pero un área quedó POSTERGADA y recién
+        //     ahora se pudo mirar (se liberó el especialista, llegó el turno del elevador).
+        //     Solo vale para áreas en deuda y mientras el hallazgo tenga cómo entrar al
+        //     presupuesto — ver WorkOrder.AcceptsLateInspection.
+        var isInitialInspection = workOrder.CurrentStatus == Domain.Enums.WorkOrderStatus.UnderInspection;
 
-        // Validar que no exista ya un reporte para esta (orden, área) — respeta el unique index a nivel app
-        if (await _repository.ExistsForAreaAsync(request.WorkOrderId, request.AreaId, cancellationToken))
-            throw new ConflictException(
-                nameof(InspectionReport),
-                "AreaId",
-                $"Ya existe un reporte para esta área en la orden {request.WorkOrderId}.");
+        if (!isInitialInspection)
+        {
+            if (!workOrder.AcceptsLateInspection)
+                throw new BadRequestException(
+                    $"No se puede reportar inspección con la orden en '{workOrder.CurrentStatus}'. " +
+                    $"Estado actual: {workOrder.CurrentStatus}.");
+
+            if (!await _repository.IsAreaPendingForVehicleAsync(workOrder.VehicleId, request.AreaId, cancellationToken))
+                throw new BadRequestException(
+                    "Con la inspección ya cerrada solo se pueden reportar las áreas que quedaron postergadas.");
+        }
+
+        // Un reporte vivo por (orden, área) — respeta el unique index parcial a nivel app.
+        // En el canal tardío la postergación de ESTA orden es justamente lo que venimos a
+        // reemplazar: la damos de baja (soft delete, igual que "Deshacer") para liberar el
+        // índice, y queda como historial de que el área se había postergado.
+        var existing = await _repository.GetByWorkOrderAndAreaAsync(request.WorkOrderId, request.AreaId, cancellationToken);
+        if (existing is not null)
+        {
+            if (isInitialInspection || !existing.IsSkipped)
+                throw new ConflictException(
+                    nameof(InspectionReport),
+                    "AreaId",
+                    $"Ya existe un reporte para esta área en la orden {request.WorkOrderId}.");
+
+            _repository.Delete(existing);
+        }
 
         var report = new InspectionReport
         {

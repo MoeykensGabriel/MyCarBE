@@ -83,6 +83,39 @@ public class WorkOrder : BaseEntity
     public ICollection<WorkOrderStatusChange> StatusChanges { get; set; } = new List<WorkOrderStatusChange>();
     public ICollection<InspectionReport> InspectionReports { get; set; } = new List<InspectionReport>();
 
+    /// <summary>
+    /// La orden admite trabajo nuevo: se le pueden agregar servicios y repuestos.
+    ///
+    /// Falso en AwaitingApproval (el presupuesto ya salió congelado y el cliente lo está
+    /// mirando — para cambiarlo hay que volver a Diagnosing con ReviseQuote) y en los
+    /// estados terminales.
+    ///
+    /// Ojo: los REPUESTOS son más estrictos que los servicios (ver AcceptsLateInspection).
+    /// </summary>
+    public bool AcceptsNewWork =>
+        CurrentStatus is not (WorkOrderStatus.AwaitingApproval
+                           or WorkOrderStatus.Completed
+                           or WorkOrderStatus.Delivered
+                           or WorkOrderStatus.Cancelled);
+
+    /// <summary>
+    /// Ventana del canal de inspección tardía: un área que quedó POSTERGADA se puede
+    /// inspeccionar después, con la inspección inicial ya cerrada.
+    ///
+    /// Son exactamente los estados donde entran tanto servicios COMO repuestos
+    /// (ver AddPartToWorkOrderCommandHandler, que es el más estricto de los dos). Se elige
+    /// el más estricto a propósito: un hallazgo tardío suele necesitar repuestos, y no
+    /// queremos permitir registrar un hallazgo que después no se pueda resolver.
+    ///
+    /// Fuera de esta ventana el hallazgo no tendría cómo entrar al presupuesto:
+    /// en AwaitingApproval el cliente está mirando el presupuesto congelado, y en los
+    /// estados terminales ya no se agrega trabajo.
+    /// </summary>
+    public bool AcceptsLateInspection =>
+        CurrentStatus is WorkOrderStatus.Diagnosing
+                      or WorkOrderStatus.Approved
+                      or WorkOrderStatus.InProgress;
+
     // -------------------------------------------------------------------------
     // Máquina de estados
     // -------------------------------------------------------------------------
