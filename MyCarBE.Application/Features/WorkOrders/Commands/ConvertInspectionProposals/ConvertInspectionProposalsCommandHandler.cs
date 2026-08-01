@@ -36,10 +36,14 @@ public class ConvertInspectionProposalsCommandHandler
         var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
-        if (workOrder.CurrentStatus != WorkOrderStatus.Diagnosing)
+        // Misma ventana que el canal de inspección tardía: una inspección que llegó con la
+        // orden ya aprobada también tiene que poder volcar sus propuestas al presupuesto.
+        // Los ítems nacen Pending, así que en Approved/InProgress entran como ADICIONALES y
+        // no suman al total hasta que el cliente los apruebe — la regla de siempre.
+        if (!workOrder.AcceptsLateInspection)
             throw new BadRequestException(
-                $"Solo se pueden consolidar propuestas en una orden en estado 'Diagnosing'. " +
-                $"Estado actual: '{workOrder.CurrentStatus}'.");
+                $"Solo se pueden consolidar propuestas mientras la orden admite trabajo nuevo " +
+                $"('Diagnosing', 'Approved' o 'InProgress'). Estado actual: '{workOrder.CurrentStatus}'.");
 
         var reports = await _inspectionRepository.GetByWorkOrderWithProposalsAsync(workOrder.Id, cancellationToken);
 
