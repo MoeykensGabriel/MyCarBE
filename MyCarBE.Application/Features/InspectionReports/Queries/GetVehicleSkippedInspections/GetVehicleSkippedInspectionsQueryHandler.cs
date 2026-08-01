@@ -27,7 +27,7 @@ public class GetVehicleSkippedInspectionsQueryHandler
             ?? throw new NotFoundException(nameof(Vehicle), request.VehicleId);
 
         var skipped = await _inspectionReportRepository
-            .GetSkippedForVehicleLastOrderAsync(request.VehicleId, cancellationToken);
+            .GetPendingSkippedForVehicleAsync(request.VehicleId, cancellationToken);
 
         return skipped
             .Select(r => new SkippedInspectionAreaDto(

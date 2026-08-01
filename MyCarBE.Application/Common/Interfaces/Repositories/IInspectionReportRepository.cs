@@ -26,9 +26,13 @@ public interface IInspectionReportRepository : IRepository<InspectionReport>
     Task<IReadOnlyList<InspectionReport>> GetByWorkOrderWithProposalsAsync(Guid workOrderId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Áreas omitidas (IsSkipped=true) en la última orden no cancelada del vehículo,
-    /// con Area y WorkOrder eager-loaded. Vacío si la última visita cubrió todo.
-    /// Alimenta el aviso "quedó sin inspeccionar" en la ficha del vehículo y al crear una orden.
+    /// Áreas del vehículo que quedaron postergadas y NO se volvieron a inspeccionar después,
+    /// con Area y WorkOrder eager-loaded (los de la postergación vigente). Vacío si no arrastra nada.
+    ///
+    /// Es una deuda del VEHÍCULO, no una foto de la última visita: el taller cierra la orden
+    /// postergando lo que no llegó a mirar, hace el trabajo, y abre OTRA orden para lo omitido.
+    /// Por eso la deuda tiene que sobrevivir a la apertura de esa orden nueva y limpiarse sola
+    /// recién cuando el área se inspecciona de verdad.
     /// </summary>
-    Task<IReadOnlyList<InspectionReport>> GetSkippedForVehicleLastOrderAsync(Guid vehicleId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<InspectionReport>> GetPendingSkippedForVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default);
 }

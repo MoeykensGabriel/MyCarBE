@@ -46,24 +46,32 @@ public class InspectionReportRepository : Repository<InspectionReport>, IInspect
             .Where(r => r.WorkOrderId == workOrderId)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<InspectionReport>> GetSkippedForVehicleLastOrderAsync(Guid vehicleId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<InspectionReport>> GetPendingSkippedForVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
-        // Última orden no cancelada del vehículo — si no tiene omitidas, no hay aviso.
-        var lastOrderId = await _context.WorkOrders
-            .Where(w => w.VehicleId == vehicleId && w.CurrentStatus != Domain.Enums.WorkOrderStatus.Cancelled)
-            .OrderByDescending(w => w.CreatedAt)
-            .Select(w => (Guid?)w.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (lastOrderId is null)
-            return Array.Empty<InspectionReport>();
-
-        return await _context.InspectionReports
+        // Historial completo de inspecciones del vehículo, no solo el de la última orden.
+        // Mirar solo la última orden hacía desaparecer el aviso apenas se abría la orden
+        // nueva (esa orden todavía no tiene reportes), justo cuando el taller lo necesitaba.
+        // El query filter global ya descarta los reportes deshechos (soft delete).
+        var reports = await _context.InspectionReports
             .Include(r => r.Area)
             .Include(r => r.WorkOrder)
-            .Where(r => r.WorkOrderId == lastOrderId && r.IsSkipped)
-            .OrderBy(r => r.Area.Name)
+            .Where(r => r.WorkOrder.VehicleId == vehicleId
+                     && r.WorkOrder.CurrentStatus != Domain.Enums.WorkOrderStatus.Cancelled)
             .ToListAsync(cancellationToken);
+
+        // Manda el reporte más reciente de cada área: si es una postergación, el área sigue
+        // debiendo; si alguien la inspectó (o la cerró "sin novedades") después, ya no.
+        // El desempate por Id mantiene el resultado estable entre órdenes del mismo instante.
+        return reports
+            .GroupBy(r => r.AreaId)
+            .Select(g => g
+                .OrderByDescending(r => r.WorkOrder.CreatedAt)
+                .ThenByDescending(r => r.CreatedAt)
+                .ThenByDescending(r => r.Id)
+                .First())
+            .Where(r => r.IsSkipped)
+            .OrderBy(r => r.Area.Name)
+            .ToList();
     }
 
     public void RemoveAllProposals(InspectionReport report)
