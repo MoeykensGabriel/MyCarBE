@@ -55,7 +55,19 @@ public class UpdateInspectionReportCommandHandler : IRequestHandler<UpdateInspec
         var workOrder = await _workOrderRepository.GetByIdAsync(report.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), report.WorkOrderId);
 
-        if (workOrder.CurrentStatus != WorkOrderStatus.UnderInspection)
+        // Dos ventanas de edición:
+        //   - Inspección inicial: cualquier reporte, mientras la orden siga en UnderInspection.
+        //   - Reporte TARDÍO: se puede corregir mientras la orden siga en la ventana del canal.
+        //     Un hallazgo cargado a las apuradas con el auto en el elevador tiene que poder
+        //     corregirse; si no, el mecánico termina llamando por teléfono al taller.
+        //
+        // A propósito NO se abre para reportes de la inspección inicial con la orden avanzada:
+        // esos fueron el insumo del presupuesto, y editarlos después lo volvería un blanco
+        // móvil. El tardío no tiene ese problema — llegó después y se está procesando ahora.
+        var canEdit = workOrder.CurrentStatus == WorkOrderStatus.UnderInspection
+                   || (report.IsLate && workOrder.AcceptsLateInspection);
+
+        if (!canEdit)
             throw new BadRequestException(
                 $"No se puede editar el reporte: la orden ya no está en fase de inspección " +
                 $"(estado actual: {workOrder.CurrentStatus}).");
