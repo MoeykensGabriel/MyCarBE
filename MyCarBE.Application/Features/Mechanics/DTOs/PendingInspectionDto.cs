@@ -21,7 +21,17 @@ public record PendingInspectionDto(
     string   VehicleModel,
     string   VehicleLicensePlate,
 
-    IReadOnlyList<PendingInspectionAreaDto> PendingAreas
+    IReadOnlyList<PendingInspectionAreaDto> PendingAreas,
+
+    /// <summary>
+    /// True cuando la inspección inicial de esta orden YA CERRÓ y estas áreas quedaron
+    /// postergadas — el auto sigue en el taller y se pueden mirar igual.
+    ///
+    /// No es lo mismo para el mecánico: "te toca inspeccionar este auto" (inicial) versus
+    /// "esta área quedó debiendo de esta visita". La segunda suele ser la que estaba
+    /// esperando a que él se liberara.
+    /// </summary>
+    bool IsLateInspection = false
 );
 
 public record PendingInspectionAreaDto(

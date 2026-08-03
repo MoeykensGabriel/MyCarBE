@@ -119,6 +119,20 @@ public class WorkOrderRepository : Repository<WorkOrder>, IWorkOrderRepository
             .OrderBy(w => w.CreatedAt)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<WorkOrder>> GetLateInspectionWindowWithReportsAsync(CancellationToken cancellationToken = default)
+        => await _context.WorkOrders
+            .AsNoTracking()
+            .Include(w => w.Vehicle)
+            .Include(w => w.InspectionReports)
+            // Espeja WorkOrder.AcceptsLateInspection. Son las órdenes que ya cerraron su
+            // inspección inicial pero siguen vivas: el auto puede estar en el taller y un
+            // área que quedó postergada todavía se puede mirar.
+            .Where(w => w.CurrentStatus == WorkOrderStatus.Diagnosing
+                     || w.CurrentStatus == WorkOrderStatus.Approved
+                     || w.CurrentStatus == WorkOrderStatus.InProgress)
+            .OrderBy(w => w.CreatedAt)
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<WorkOrderService>> GetScheduledServicesAsync(
         DateTime from, DateTime to, CancellationToken cancellationToken = default)
         => await _context.WorkOrderServices

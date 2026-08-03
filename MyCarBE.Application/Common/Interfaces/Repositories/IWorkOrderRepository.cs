@@ -45,6 +45,16 @@ public interface IWorkOrderRepository : IRepository<WorkOrder>
     Task<IReadOnlyList<WorkOrder>> GetUnderInspectionWithReportsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Órdenes que ya cerraron su inspección inicial pero siguen vivas (Diagnosing, Approved,
+    /// InProgress), con Vehicle y sus InspectionReports. Espeja WorkOrder.AcceptsLateInspection.
+    ///
+    /// Alimenta la otra mitad de "inspecciones pendientes" del mecánico: un área que quedó
+    /// postergada se puede seguir mirando mientras el auto está en el taller, y el especialista
+    /// tiene que enterarse de que lo están esperando.
+    /// </summary>
+    Task<IReadOnlyList<WorkOrder>> GetLateInspectionWindowWithReportsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Pool de trabajos disponibles para el mecánico: servicios Unassigned + Approved
     /// pertenecientes a WOs en InProgress. Incluye Vehicle y propietario para mostrar contexto.
     /// Ordenados por CreatedAt asc (FIFO — los más viejos primero).
