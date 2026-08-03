@@ -116,6 +116,18 @@ public class WorkOrder : BaseEntity
                       or WorkOrderStatus.Approved
                       or WorkOrderStatus.InProgress;
 
+    /// <summary>
+    /// Llegó un hallazgo DESPUÉS de cerrada la inspección. La oficina tiene que enterarse:
+    /// puede cambiar un presupuesto en armado o, con la orden ya aprobada, obligar a pedirle
+    /// al cliente que autorice un adicional.
+    ///
+    /// OJO: depende de que InspectionReports esté cargada. Se usa desde el listado de órdenes,
+    /// que hace un Include filtrado justamente para esto. En una consulta que no las cargue
+    /// devuelve false en silencio — no la uses ahí.
+    /// </summary>
+    public bool HasLateFindings =>
+        InspectionReports.Any(r => r.IsLate && r.HasIssue && !r.IsDeleted);
+
     // -------------------------------------------------------------------------
     // Máquina de estados
     // -------------------------------------------------------------------------

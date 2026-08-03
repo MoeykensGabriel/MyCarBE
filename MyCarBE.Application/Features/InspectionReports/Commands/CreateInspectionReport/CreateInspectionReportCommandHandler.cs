@@ -150,6 +150,8 @@ public class CreateInspectionReportCommandHandler : IRequestHandler<CreateInspec
             Findings     = string.IsNullOrWhiteSpace(request.Findings) ? null : request.Findings.Trim(),
             HasIssue     = request.HasIssue,
             IsNoFindings = false,
+            // Marca de origen: entró por el canal tardío, con la inspección ya cerrada.
+            IsLate       = !isInitialInspection,
         };
 
         // Propuestas: solo si HasIssue=true tiene sentido. Si vienen con HasIssue=false las ignoramos.

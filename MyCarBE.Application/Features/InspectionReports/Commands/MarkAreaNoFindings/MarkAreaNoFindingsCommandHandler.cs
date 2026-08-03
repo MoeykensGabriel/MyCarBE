@@ -78,6 +78,7 @@ public class MarkAreaNoFindingsCommandHandler : IRequestHandler<MarkAreaNoFindin
             Findings     = null,
             HasIssue     = false,
             IsNoFindings = true,
+            IsLate       = !isInitialInspection,
         };
 
         await _repository.AddAsync(report, cancellationToken);

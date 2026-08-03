@@ -22,5 +22,11 @@ public record WorkOrderSummaryDto(
     string?         ContactPersonName,
     string?         ContactPersonPhone,
     DateTime        CreatedAt,
-    DateTime        UpdatedAt
+    DateTime        UpdatedAt,
+
+    /// <summary>
+    /// Llegó un hallazgo con la inspección ya cerrada. Es el aviso para la oficina: puede
+    /// cambiar un presupuesto en armado, o exigir que se le pida al cliente un adicional.
+    /// </summary>
+    bool            HasLateFindings = false
 );
