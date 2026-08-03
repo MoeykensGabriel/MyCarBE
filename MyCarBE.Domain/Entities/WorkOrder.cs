@@ -128,7 +128,14 @@ public class WorkOrder : BaseEntity
         // Received queda como estado legacy de órdenes pre-S3-06. Permitimos que pasen a UnderInspection
         // o directo a Diagnosing/Cancelled para no trabar nada.
         { WorkOrderStatus.Received,         new[] { WorkOrderStatus.UnderInspection, WorkOrderStatus.Diagnosing, WorkOrderStatus.Cancelled } },
-        { WorkOrderStatus.Diagnosing,        new[] { WorkOrderStatus.AwaitingApproval, WorkOrderStatus.Cancelled } },
+        // Diagnosing → Completed: "cerrar sin presupuesto". El cliente solo quería una
+        // inspección, o se inspeccionó y no había nada que cotizar. Antes la única salida
+        // era Cancelled, que además borra la deuda de áreas postergadas de ESTA visita
+        // (GetPendingSkippedForVehicleAsync excluye canceladas) — un dato real que se perdía
+        // por no tener otra forma de cerrar. Ver guard en ChangeStatus: solo si no hay
+        // servicios ni repuestos cargados: si hay algo que cotizar, corresponde el camino
+        // normal (enviar presupuesto), no este atajo.
+        { WorkOrderStatus.Diagnosing,        new[] { WorkOrderStatus.AwaitingApproval, WorkOrderStatus.Completed, WorkOrderStatus.Cancelled } },
         // AwaitingApproval ahora pasa a Approved (el cliente aprobó pero el auto puede no haber llegado).
         // Mantenemos también el atajo directo a InProgress por si el admin quiere saltearlo.
         // La vuelta a Diagnosing es "Modificar presupuesto": el cliente pidió cambios antes de
@@ -157,9 +164,21 @@ public class WorkOrder : BaseEntity
                 $"Invalid transition: cannot move from '{CurrentStatus}' to '{newStatus}'.");
 
         // Regla de negocio: solo se puede pasar a Completed si TODOS los servicios
-        // activos fueron finalizados por sus mecánicos.
+        // activos fueron finalizados por sus mecánicos. Con la orden en Diagnosing esto se
+        // cumple solo (todavía no hay servicios asignados), así que hace falta un guard propio
+        // para ese caso: "cerrar sin presupuesto" es exclusivamente para cuando NO hay nada
+        // cargado. Si hay servicios o repuestos, el camino correcto es enviar el presupuesto.
         if (newStatus == WorkOrderStatus.Completed)
         {
+            if (CurrentStatus == WorkOrderStatus.Diagnosing)
+            {
+                var hasItems = Services.Any(s => !s.IsDeleted) || Parts.Any(p => !p.IsDeleted);
+                if (hasItems)
+                    throw new InvalidOperationException(
+                        "No se puede cerrar sin presupuesto: hay servicios o repuestos cargados. " +
+                        "Enviá el presupuesto o quitá los ítems antes de cerrar la orden.");
+            }
+
             var pending = Services
                 .Where(s => !s.IsDeleted &&
                             s.AssignmentStatus != Enums.WorkOrderServiceAssignmentStatus.Completed)
