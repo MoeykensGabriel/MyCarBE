@@ -36,7 +36,10 @@ public class CloseInspectionCommandHandler : IRequestHandler<CloseInspectionComm
 
     public async Task<WorkOrderDetailDto> Handle(CloseInspectionCommand request, CancellationToken cancellationToken)
     {
-        var workOrder = await _workOrderRepository.GetByIdAsync(request.WorkOrderId, cancellationToken)
+        // GetWithFullDetailsAsync y no GetByIdAsync: los guards de ChangeStatus miran
+        // Services y Parts, y el repositorio genérico no hace ningún Include — con las
+        // colecciones vacías esos guards pasarían siempre, en silencio.
+        var workOrder = await _workOrderRepository.GetWithFullDetailsAsync(request.WorkOrderId, cancellationToken)
             ?? throw new NotFoundException(nameof(WorkOrder), request.WorkOrderId);
 
         if (workOrder.CurrentStatus != WorkOrderStatus.UnderInspection)
@@ -58,7 +61,22 @@ public class CloseInspectionCommandHandler : IRequestHandler<CloseInspectionComm
                 "Pedí a los mecánicos correspondientes que reporten o marcalas como 'sin hallazgos'.");
         }
 
-        workOrder.ChangeStatus(WorkOrderStatus.Diagnosing, _currentUser.UserId, "Inspección cerrada — pasa a cotización.");
+        // Una orden de solo inspección no tiene nada que cotizar: el cierre la completa.
+        // Si el cliente después acepta arreglar, se promueve a orden de trabajo.
+        var (destino, nota) = workOrder.IsInspectionOnly
+            ? (WorkOrderStatus.Completed,
+               "Inspección cerrada — el cliente solo pidió el diagnóstico, la orden se completa.")
+            : (WorkOrderStatus.Diagnosing,
+               "Inspección cerrada — pasa a cotización.");
+
+        try
+        {
+            workOrder.ChangeStatus(destino, _currentUser.UserId, nota);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new BadRequestException(ex.Message);
+        }
 
         _workOrderRepository.Update(workOrder);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -59,5 +59,17 @@ public record WorkOrderDetailDto(
     /// suma de (estimación del mecánico ?? duración del catálogo) * cantidad.
     /// Sirve para el agendado automático y para mostrar el ETA total.
     /// </summary>
-    int                                TotalEstimatedMinutes
+    int                                TotalEstimatedMinutes,
+
+    /// <summary>Para qué entró el vehículo. Se congela en el ingreso.</summary>
+    WorkOrderPurpose                   Purpose = WorkOrderPurpose.Repair,
+
+    /// <summary>
+    /// Sigue siendo solo inspección (no se promovió). Es lo que hay que mirar para decidir
+    /// qué mostrar: Purpose solo dice cómo ENTRÓ.
+    /// </summary>
+    bool                               IsInspectionOnly = false,
+
+    /// <summary>Cuándo se promovió a orden de trabajo. Null si nunca se promovió.</summary>
+    DateTime?                          PromotedToRepairAt = null
 );

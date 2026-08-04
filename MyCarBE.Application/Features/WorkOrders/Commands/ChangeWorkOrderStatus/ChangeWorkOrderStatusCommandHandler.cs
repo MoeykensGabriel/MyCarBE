@@ -50,6 +50,20 @@ public class ChangeWorkOrderStatusCommandHandler : IRequestHandler<ChangeWorkOrd
             throw new BadRequestException(
                 "Para modificar un presupuesto enviado usá POST /api/work-orders/{id}/revise-quote en lugar de cambiar el estado directamente.");
 
+        // Cerrar una orden de solo inspección valida que todas las áreas estén cubiertas.
+        // Por esta ruta genérica ese chequeo se saltearía.
+        if (workOrder.CurrentStatus == WorkOrderStatus.UnderInspection &&
+            request.NewStatus == WorkOrderStatus.Completed)
+            throw new BadRequestException(
+                "Para cerrar una orden de solo inspección usá POST /api/work-orders/{id}/close-inspection en lugar de cambiar el estado directamente.");
+
+        // La promoción setea PromotedToRepairAt; por acá el estado cambiaría sin esa marca
+        // y la orden quedaría en Diagnosing pero seguiría contando como solo inspección.
+        if (workOrder.CurrentStatus == WorkOrderStatus.Completed &&
+            request.NewStatus == WorkOrderStatus.Diagnosing)
+            throw new BadRequestException(
+                "Para promover una inspección a orden de trabajo usá POST /api/work-orders/{id}/promote-to-work-order en lugar de cambiar el estado directamente.");
+
         try
         {
             // Shortcut del admin: si la WO está AwaitingApproval y el admin la mueve a

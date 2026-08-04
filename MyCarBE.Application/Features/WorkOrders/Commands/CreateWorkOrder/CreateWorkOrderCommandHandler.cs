@@ -43,6 +43,7 @@ public class CreateWorkOrderCommandHandler : IRequestHandler<CreateWorkOrderComm
             FleetIdAtEntry      = vehicle.FleetId,
             CreatedByUserId     = _currentUser.UserId,
             ServiceReason       = string.IsNullOrWhiteSpace(request.ServiceReason) ? null : request.ServiceReason.Trim(),
+            Purpose             = request.Purpose,
         };
 
         // Initializes CurrentStatus = Received and records first StatusChange event

@@ -18,6 +18,21 @@ public class WorkOrder : BaseEntity
     /// </summary>
     public int Number { get; set; }
 
+    /// <summary>
+    /// Para qué entró el vehículo. Se declara en el INGRESO y queda congelado: la orden
+    /// entró como solo inspección y eso no se reescribe, ni siquiera al promoverla.
+    ///
+    /// Ese congelamiento es el que permite saber después que la orden nunca pasó por
+    /// diagnóstico. Para el estado VIVO no consultes este campo sino IsInspectionOnly.
+    /// </summary>
+    public WorkOrderPurpose Purpose { get; set; } = WorkOrderPurpose.Repair;
+
+    /// <summary>
+    /// Cuándo el cliente aceptó arreglar lo que la inspección encontró y esta orden dejó de
+    /// ser solo inspección. Null mientras siga siéndolo. Ver PromoteToRepair().
+    /// </summary>
+    public DateTime? PromotedToRepairAt { get; set; }
+
     public Guid VehicleId { get; set; }
     public Vehicle Vehicle { get; set; } = null!;
 
@@ -91,12 +106,28 @@ public class WorkOrder : BaseEntity
     /// estados terminales.
     ///
     /// Ojo: los REPUESTOS son más estrictos que los servicios (ver AcceptsLateInspection).
+    ///
+    /// Una orden de SOLO INSPECCIÓN nunca acepta trabajo: si acumulara ítems, al cerrarla
+    /// quedaría Completada con servicios que nadie cotizó ni aprobó. Para cargarle trabajo
+    /// primero hay que promoverla.
     /// </summary>
     public bool AcceptsNewWork =>
+        !IsInspectionOnly &&
         CurrentStatus is not (WorkOrderStatus.AwaitingApproval
                            or WorkOrderStatus.Completed
                            or WorkOrderStatus.Delivered
                            or WorkOrderStatus.Cancelled);
+
+    /// <summary>
+    /// La orden sigue siendo "solo inspección": el cliente quería saber qué tiene el
+    /// vehículo, no arreglarlo. Deja de serlo al promoverla.
+    ///
+    /// Es el predicado que consultan todos los guards. A diferencia de HasLateFindings,
+    /// NO depende de que haya colecciones cargadas: son dos columnas escalares que vienen
+    /// siempre, así que es seguro usarlo en cualquier consulta.
+    /// </summary>
+    public bool IsInspectionOnly =>
+        Purpose == WorkOrderPurpose.InspectionOnly && PromotedToRepairAt is null;
 
     /// <summary>
     /// Ventana del canal de inspección tardía: un área que quedó POSTERGADA se puede
@@ -136,7 +167,10 @@ public class WorkOrder : BaseEntity
     {
         // Estado inicial de nuevas órdenes a partir de S3-06. Pasa a Diagnosing cuando el admin
         // cierra la inspección colectiva (todas las áreas reportaron o fueron marcadas "sin hallazgos").
-        { WorkOrderStatus.UnderInspection,  new[] { WorkOrderStatus.Diagnosing, WorkOrderStatus.Cancelled } },
+        // UnderInspection → Completed: cierre de una orden de SOLO INSPECCIÓN. No pasa por
+        // Diagnosing porque no hay nada que cotizar. El guard en ChangeStatus se asegura de
+        // que solo lo use ese tipo de orden — una de trabajo tiene que cotizar sí o sí.
+        { WorkOrderStatus.UnderInspection,  new[] { WorkOrderStatus.Diagnosing, WorkOrderStatus.Completed, WorkOrderStatus.Cancelled } },
         // Received queda como estado legacy de órdenes pre-S3-06. Permitimos que pasen a UnderInspection
         // o directo a Diagnosing/Cancelled para no trabar nada.
         { WorkOrderStatus.Received,         new[] { WorkOrderStatus.UnderInspection, WorkOrderStatus.Diagnosing, WorkOrderStatus.Cancelled } },
@@ -156,7 +190,11 @@ public class WorkOrder : BaseEntity
         // Aprobado: ya hay luz verde del cliente. Cuando llega el vehículo / arranca el trabajo, va a InProgress.
         { WorkOrderStatus.Approved,         new[] { WorkOrderStatus.InProgress, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.InProgress,       new[] { WorkOrderStatus.Completed, WorkOrderStatus.Cancelled } },
-        { WorkOrderStatus.Completed,        new[] { WorkOrderStatus.Delivered, WorkOrderStatus.Cancelled } },
+        // Completed → Diagnosing: existe ÚNICAMENTE como promoción de una orden de solo
+        // inspección (el cliente aceptó arreglar lo que se encontró). El guard en ChangeStatus
+        // lo cierra para las órdenes de trabajo: reabrir una terminada descongelaría ítems que
+        // el cliente ya aprobó y cambiaría el criterio de RecalculateTotalAmount.
+        { WorkOrderStatus.Completed,        new[] { WorkOrderStatus.Delivered, WorkOrderStatus.Diagnosing, WorkOrderStatus.Cancelled } },
         { WorkOrderStatus.Delivered,        Array.Empty<WorkOrderStatus>() },
         { WorkOrderStatus.Cancelled,        Array.Empty<WorkOrderStatus>() },
     };
@@ -180,9 +218,32 @@ public class WorkOrder : BaseEntity
         // cumple solo (todavía no hay servicios asignados), así que hace falta un guard propio
         // para ese caso: "cerrar sin presupuesto" es exclusivamente para cuando NO hay nada
         // cargado. Si hay servicios o repuestos, el camino correcto es enviar el presupuesto.
+        // Una orden de SOLO INSPECCIÓN no pasa a cotización: al cerrar la inspección se
+        // completa. Si el cliente aceptó arreglar, el camino es promoverla.
+        if (newStatus == WorkOrderStatus.Diagnosing)
+        {
+            if (CurrentStatus == WorkOrderStatus.UnderInspection && IsInspectionOnly)
+                throw new InvalidOperationException(
+                    "Esta orden es de solo inspección: al cerrar la inspección se completa. " +
+                    "Si el cliente aceptó arreglar lo encontrado, promovela a orden de trabajo.");
+
+            // Completed → Diagnosing existe solo como promoción. Para una orden de trabajo
+            // ya terminada sería reabrirla, con sus ítems aprobados volviendo a ser editables.
+            if (CurrentStatus == WorkOrderStatus.Completed && !IsInspectionOnly)
+                throw new InvalidOperationException(
+                    "No se puede volver a cotización una orden de trabajo ya completada.");
+        }
+
         if (newStatus == WorkOrderStatus.Completed)
         {
-            if (CurrentStatus == WorkOrderStatus.Diagnosing)
+            // Cerrar directo desde la inspección es exclusivo de las órdenes de solo
+            // inspección. Una orden de trabajo tiene que pasar por Diagnosing sí o sí.
+            if (CurrentStatus == WorkOrderStatus.UnderInspection && !IsInspectionOnly)
+                throw new InvalidOperationException(
+                    "Solo una orden de solo inspección puede cerrarse desde la inspección. " +
+                    "Cerrá la inspección para pasar a diagnóstico y armar el presupuesto.");
+
+            if (CurrentStatus is WorkOrderStatus.Diagnosing or WorkOrderStatus.UnderInspection)
             {
                 var hasItems = Services.Any(s => !s.IsDeleted) || Parts.Any(p => !p.IsDeleted);
                 if (hasItems)
@@ -374,6 +435,40 @@ public class WorkOrder : BaseEntity
         }
 
         QuoteExpiresAt = null;
+    }
+
+    /// <summary>
+    /// El cliente aceptó arreglar lo que la inspección encontró: la orden de solo inspección
+    /// se convierte en orden de trabajo y vuelve a cotización.
+    ///
+    /// No se re-inspecciona nada. Los InspectionReport con sus hallazgos y propuestas siguen
+    /// colgando de esta misma orden, y en Diagnosing la oficina los vuelca al presupuesto con
+    /// ConvertInspectionProposals igual que en cualquier orden. Ese es el motivo de mandarla a
+    /// Diagnosing y no a un estado nuevo: todo el circuito de cotización funciona sin tocar nada.
+    ///
+    /// Purpose NO se toca: la orden entró como solo inspección y eso queda escrito. Lo que
+    /// cambia es PromotedToRepairAt, que apaga IsInspectionOnly y con eso reabre AcceptsNewWork.
+    /// </summary>
+    public void PromoteToRepair(Guid changedByUserId, string? note = null)
+    {
+        if (Purpose != WorkOrderPurpose.InspectionOnly)
+            throw new InvalidOperationException(
+                "Solo se puede promover una orden que entró como solo inspección.");
+
+        if (PromotedToRepairAt is not null)
+            throw new InvalidOperationException("Esta orden ya fue promovida a orden de trabajo.");
+
+        if (CurrentStatus != WorkOrderStatus.Completed)
+            throw new InvalidOperationException(
+                $"Solo se promueve una inspección ya cerrada. Estado actual: {CurrentStatus}.");
+
+        // OJO con el orden: ChangeStatus va ANTES de setear PromotedToRepairAt, porque el
+        // guard de Completed → Diagnosing exige que la orden todavía sea IsInspectionOnly.
+        // Invertirlo hace que la promoción se rechace a sí misma.
+        ChangeStatus(WorkOrderStatus.Diagnosing, changedByUserId,
+            note ?? "El cliente aceptó arreglar lo encontrado — la orden pasa a cotización.");
+
+        PromotedToRepairAt = DateTime.UtcNow;
     }
 
     /// <summary>

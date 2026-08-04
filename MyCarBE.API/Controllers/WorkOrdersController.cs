@@ -12,6 +12,7 @@ using MyCarBE.Application.Features.WorkOrders.Commands.ConvertInspectionProposal
 using MyCarBE.Application.Features.WorkOrders.Commands.CreateWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.DecideAdditionalItems;
 using MyCarBE.Application.Features.WorkOrders.Commands.DeleteWorkOrderPhoto;
+using MyCarBE.Application.Features.WorkOrders.Commands.PromoteInspectionToWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.RemovePartFromWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.RemoveServiceFromWorkOrder;
 using MyCarBE.Application.Features.WorkOrders.Commands.ReviseQuote;
@@ -338,6 +339,29 @@ public class WorkOrdersController : ControllerBase
     }
 
     public record ReviseQuoteRequest(string? Note);
+
+    /// <summary>
+    /// Promueve una orden de SOLO INSPECCIÓN a orden de trabajo: el cliente aceptó arreglar
+    /// lo que se encontró. La orden vuelve de Completed a Diagnosing con sus hallazgos y
+    /// propuestas intactos, listos para volcarse al presupuesto. Solo Admin — es una decisión
+    /// comercial.
+    /// </summary>
+    [HttpPost("{id:guid}/promote-to-work-order")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PromoteToWorkOrder(
+        Guid id,
+        [FromBody] PromoteToWorkOrderRequest? body,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new PromoteInspectionToWorkOrderCommand(id, body?.Note), cancellationToken);
+        return Ok(result);
+    }
+
+    public record PromoteToWorkOrderRequest(string? Note);
 
     /// <summary>
     /// Decide items ADICIONALES (surgidos después de aprobar el presupuesto original):
