@@ -36,5 +36,12 @@ public record WorkOrderServiceDto(
     /// con la foto "después" (que sube el mecánico al cerrar el servicio).
     /// </summary>
     Guid?   AreaId,
-    string? AreaName
+    string? AreaName,
+
+    /// <summary>
+    /// Decisión del cliente sobre este servicio. Los repuestos siempre la expusieron; los
+    /// servicios no, y el informe de cierre la necesita para no listar como realizado algo
+    /// que el cliente rechazó. Default Pending: es el estado con el que nace un item.
+    /// </summary>
+    QuoteItemApprovalStatus ApprovalStatus = QuoteItemApprovalStatus.Pending
 );

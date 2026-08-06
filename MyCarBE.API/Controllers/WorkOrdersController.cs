@@ -28,6 +28,7 @@ using MyCarBE.Application.Features.WorkOrders.DTOs;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetApprovalInfo;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetQuoteApprovalLink;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderById;
+using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderClosingPdf;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderQuotePdf;
 using MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrders;
 using MyCarBE.Application.Features.InspectionReports.Commands.MarkAreaNoFindings;
@@ -409,6 +410,35 @@ public class WorkOrdersController : ControllerBase
     {
         var result = await _sender.Send(new GetWorkOrderQuotePdfQuery(id), cancellationToken);
         return File(result.Content, "application/pdf", $"Presupuesto-{result.OrderNumber}.pdf");
+    }
+
+    /// <summary>
+    /// Descarga el INFORME DE CIERRE: todo lo que pasó con el vehículo en esta visita
+    /// (motivo de ingreso, inspección área por área, trabajo realizado y cierre), para que
+    /// el cliente se lo lleve por escrito.
+    ///
+    /// Disponible solo con la orden terminada (Completed o Delivered) — antes sería un
+    /// documento incompleto. Las órdenes de solo inspección generan la variante sin
+    /// presupuesto. Oficina siempre; el cliente solo sus propias órdenes.
+    ///
+    /// Con internal=true devuelve la versión INTERNA del taller: además de lo anterior,
+    /// quién revisó cada área, quién ejecutó cada servicio, precios unitarios, códigos de
+    /// repuesto, ítems rechazados y el historial completo de estados. Solo Admin.
+    /// </summary>
+    [HttpGet("{id:guid}/closing-report")]
+    [Authorize]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadClosingReport(
+        Guid id,
+        [FromQuery] bool @internal,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetWorkOrderClosingPdfQuery(id, @internal), cancellationToken);
+        var name   = @internal ? $"Informe-interno-{result.OrderNumber}.pdf" : $"Informe-{result.OrderNumber}.pdf";
+        return File(result.Content, "application/pdf", name);
     }
 
     /// <summary>
