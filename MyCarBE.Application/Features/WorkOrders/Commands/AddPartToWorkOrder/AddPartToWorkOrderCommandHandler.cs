@@ -38,6 +38,14 @@ public class AddPartToWorkOrderCommandHandler
         // depósito hasta que el cliente los apruebe (DecideAdditionalItems).
         // En AwaitingApproval se bloquea: el presupuesto ya salió congelado — para modificarlo
         // hay que volver a Diagnosing vía "Modificar presupuesto" (ReviseQuote).
+        // A una orden de solo inspección no se le carga trabajo — hay que promoverla primero.
+        // Hoy sus estados ya la dejan afuera del check de abajo, pero lo decimos explícito
+        // para que la regla esté donde se la busca y con el mensaje correcto.
+        if (workOrder.IsInspectionOnly)
+            throw new BadRequestException(
+                "Esta orden es de solo inspección: no se le cargan repuestos. " +
+                "Si el cliente aceptó arreglar lo encontrado, promovela a orden de trabajo.");
+
         if (workOrder.CurrentStatus is not (WorkOrderStatus.Diagnosing
                                          or WorkOrderStatus.Approved
                                          or WorkOrderStatus.InProgress))

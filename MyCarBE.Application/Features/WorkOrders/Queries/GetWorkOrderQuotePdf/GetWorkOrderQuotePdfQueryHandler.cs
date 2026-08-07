@@ -48,6 +48,13 @@ public class GetWorkOrderQuotePdfQueryHandler : IRequestHandler<GetWorkOrderQuot
         if (workOrder.CurrentStatus is WorkOrderStatus.Received or WorkOrderStatus.Diagnosing)
             throw new BadRequestException("Todavía no hay un presupuesto disponible para esta orden.");
 
+        // Una orden de solo inspección nunca tiene presupuesto, pero sí llega a Completed,
+        // así que pasaría el check de arriba y generaría un PDF con cero items.
+        if (workOrder.IsInspectionOnly)
+            throw new BadRequestException(
+                "Esta orden es de solo inspección: no tiene presupuesto. El resultado de la " +
+                "inspección se consulta en el detalle de la orden.");
+
         // Ownership: si el usuario es Customer, solo puede descargar el PDF
         // de sus propias órdenes (directas o vía flota). Admin pasa siempre.
         if (!_currentUser.IsAdmin)

@@ -7,7 +7,9 @@ namespace MyCarBE.Application.Features.WorkOrders.Commands.ConvertInspectionProp
 /// Convierte propuestas de inspección (servicios + repuestos sugeridos por los mecánicos)
 /// en items reales del presupuesto de la orden.
 ///
-/// El admin elige qué propuestas pasan al presupuesto (subset). Solo válido en Diagnosing.
+/// El admin elige qué propuestas pasan al presupuesto (subset). Válido mientras la orden
+/// admita trabajo nuevo (Diagnosing/Approved/InProgress): una inspección tardía puede sumar
+/// propuestas con el presupuesto ya aprobado, y esos ítems entran como adicionales Pending.
 /// Cada propuesta seleccionada se traduce en un WorkOrderService o WorkOrderPart, copiando
 /// los datos del mecánico. Luego el admin puede editar precios/cantidades con los endpoints existentes.
 ///

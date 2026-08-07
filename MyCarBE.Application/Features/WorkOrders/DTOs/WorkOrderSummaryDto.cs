@@ -22,5 +22,20 @@ public record WorkOrderSummaryDto(
     string?         ContactPersonName,
     string?         ContactPersonPhone,
     DateTime        CreatedAt,
-    DateTime        UpdatedAt
+    DateTime        UpdatedAt,
+
+    /// <summary>
+    /// Llegó un hallazgo con la inspección ya cerrada. Es el aviso para la oficina: puede
+    /// cambiar un presupuesto en armado, o exigir que se le pida al cliente un adicional.
+    /// </summary>
+    bool            HasLateFindings = false,
+
+    /// <summary>Para qué entró el vehículo. Se congela en el ingreso.</summary>
+    WorkOrderPurpose Purpose = WorkOrderPurpose.Repair,
+
+    /// <summary>
+    /// Sigue siendo solo inspección (no se promovió). Es lo que hay que mirar para decidir
+    /// qué mostrar: Purpose solo dice cómo ENTRÓ.
+    /// </summary>
+    bool            IsInspectionOnly = false
 );

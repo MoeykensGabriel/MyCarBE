@@ -35,4 +35,14 @@ public interface IInspectionReportRepository : IRepository<InspectionReport>
     /// recién cuando el área se inspecciona de verdad.
     /// </summary>
     Task<IReadOnlyList<InspectionReport>> GetPendingSkippedForVehicleAsync(Guid vehicleId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// ¿Este área del vehículo está en deuda? Es el permiso de escritura del canal de
+    /// inspección tardía: solo un área que quedó postergada se puede inspeccionar con la
+    /// inspección inicial ya cerrada.
+    ///
+    /// Se apoya en GetPendingSkippedForVehicleAsync a propósito, para que "estar en deuda"
+    /// signifique exactamente lo mismo al leer (el aviso) que al escribir (el permiso).
+    /// </summary>
+    Task<bool> IsAreaPendingForVehicleAsync(Guid vehicleId, Guid areaId, CancellationToken cancellationToken = default);
 }

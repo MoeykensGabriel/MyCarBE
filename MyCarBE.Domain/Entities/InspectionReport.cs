@@ -52,6 +52,18 @@ public class InspectionReport : BaseEntity
     /// <summary>Motivo de la omisión. Obligatorio cuando IsSkipped=true.</summary>
     public string? SkipReason { get; set; }
 
+    /// <summary>
+    /// true = este reporte se cargó por el canal de inspección TARDÍA: el área había quedado
+    /// postergada y se revisó con la inspección inicial ya cerrada (ver WorkOrder.AcceptsLateInspection).
+    ///
+    /// Importa por dos motivos. Uno: un hallazgo que llega cuando el presupuesto ya está armado
+    /// (o aprobado) puede cambiarlo, y la oficina tiene que enterarse — no alcanza con que
+    /// aparezca en la lista como uno más. Dos: es lo que permite distinguir un reporte tardío
+    /// de uno de la inspección inicial, que es lo que hace falta para poder editarlo o
+    /// deshacerlo sin reabrir la inspección entera.
+    /// </summary>
+    public bool IsLate { get; set; }
+
     // Fotos vinculadas (se asocian vía WorkOrderPhoto.InspectionReportId)
     public ICollection<WorkOrderPhoto> Photos { get; set; } = new List<WorkOrderPhoto>();
 

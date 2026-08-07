@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MyCarBE.Domain.Entities;
+using MyCarBE.Domain.Enums;
 
 namespace MyCarBE.Data.Configurations;
 
@@ -29,6 +30,13 @@ public class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
         builder.Property(w => w.CustomerNote).HasMaxLength(1000);
         builder.Property(w => w.TechnicianNote).HasMaxLength(1000);
         builder.Property(w => w.ServiceReason).HasMaxLength(2000);
+
+        // El propósito se declara en el ingreso y se congela: la orden ENTRÓ como solo
+        // inspección y eso no se reescribe ni al promoverla (para eso está PromotedToRepairAt).
+        // Es lo que permite saber después que nunca pasó por diagnóstico.
+        builder.Property(w => w.Purpose).HasDefaultValue(WorkOrderPurpose.Repair);
+        builder.Property(w => w.Purpose).Metadata.SetAfterSaveBehavior(
+            Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
 
         // CustomerIdAtEntry, FleetIdAtEntry y CreatedByUserId se congelan al crear — nunca se modifican
         builder.Property(w => w.CustomerIdAtEntry).Metadata.SetAfterSaveBehavior(

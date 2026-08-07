@@ -16,5 +16,8 @@ public record InspectionReportDto(
     DateTime UpdatedAt,
     IReadOnlyList<InspectionReportPhotoDto>           Photos,
     IReadOnlyList<InspectionReportProposedServiceDto> ProposedServices,
-    IReadOnlyList<InspectionReportProposedPartDto>    ProposedParts
+    IReadOnlyList<InspectionReportProposedPartDto>    ProposedParts,
+
+    /// <summary>Se cargó por el canal tardío: el área estaba postergada y se revisó después.</summary>
+    bool     IsLate = false
 );

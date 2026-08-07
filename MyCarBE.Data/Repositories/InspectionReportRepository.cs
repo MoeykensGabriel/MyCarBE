@@ -74,6 +74,12 @@ public class InspectionReportRepository : Repository<InspectionReport>, IInspect
             .ToList();
     }
 
+    public async Task<bool> IsAreaPendingForVehicleAsync(Guid vehicleId, Guid areaId, CancellationToken cancellationToken = default)
+    {
+        var pending = await GetPendingSkippedForVehicleAsync(vehicleId, cancellationToken);
+        return pending.Any(r => r.AreaId == areaId);
+    }
+
     public void RemoveAllProposals(InspectionReport report)
     {
         if (report.ProposedServices.Count > 0)

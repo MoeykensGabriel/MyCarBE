@@ -57,6 +57,8 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
 // PDF generation — swap for another provider if needed
 builder.Services.AddScoped<IPdfService, QuotePdfService>();
+// Informe de cierre: documento distinto del presupuesto, con sus propias reglas.
+builder.Services.AddScoped<IOrderClosingPdfService, OrderClosingPdfService>();
 
 // Approval link builder — change ApprovalBaseUrl in appsettings for production/frontend
 builder.Services.AddScoped<IApprovalLinkBuilder, ApprovalLinkBuilder>();

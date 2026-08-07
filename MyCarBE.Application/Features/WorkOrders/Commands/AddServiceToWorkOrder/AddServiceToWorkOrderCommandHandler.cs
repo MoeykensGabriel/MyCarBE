@@ -37,10 +37,7 @@ public class AddServiceToWorkOrderCommandHandler : IRequestHandler<AddServiceToW
         // ya salió congelado — para modificarlo hay que volver a Diagnosing ("Modificar
         // presupuesto" / ReviseQuote). En Approved/InProgress el servicio entra como ADICIONAL:
         // nace Pending y no suma al total hasta que el cliente lo apruebe (DecideAdditionalItems).
-        if (workOrder.CurrentStatus is WorkOrderStatus.AwaitingApproval
-                                    or WorkOrderStatus.Completed
-                                    or WorkOrderStatus.Delivered
-                                    or WorkOrderStatus.Cancelled)
+        if (!workOrder.AcceptsNewWork)
             throw new BadRequestException(
                 $"No se pueden agregar servicios a una orden en estado '{workOrder.CurrentStatus}'.");
 
