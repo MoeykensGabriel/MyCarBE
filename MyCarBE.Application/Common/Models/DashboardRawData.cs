@@ -42,7 +42,34 @@ public class DashboardRawData
     public IReadOnlyList<TopMechanicRaw>      TopMechanics      { get; set; } = [];
     public IReadOnlyList<TopServiceRaw>       TopServices       { get; set; } = [];
     public IReadOnlyList<VehicleToPickupRaw>  VehiclesToPickup  { get; set; } = [];
+
+    /// <summary>Serie de ingresos mes a mes, del más viejo al más nuevo, sin huecos.</summary>
+    public IReadOnlyList<MonthlyRevenueRaw>   MonthlyRevenue    { get; set; } = [];
+    /// <summary>Ranking de recepcionistas por órdenes registradas en el mes.</summary>
+    public IReadOnlyList<TopReceptionistRaw>  TopReceptionists  { get; set; } = [];
 }
+
+/// <summary>
+/// Un mes de la serie de ingresos. Los meses sin facturación viajan igual con 0:
+/// si se omitieran, el gráfico pegaría dos meses no consecutivos y la tendencia
+/// se leería mal.
+/// </summary>
+public record MonthlyRevenueRaw(
+    int     Year,
+    int     Month,
+    decimal Revenue,
+    int     OrdersCount
+);
+
+/// <summary>
+/// Cuántas órdenes registró cada recepcionista en el período.
+/// </summary>
+public record TopReceptionistRaw(
+    Guid   ReceptionistId,
+    string FirstName,
+    string LastName,
+    int    RegisteredCount
+);
 
 public record ExpiringApprovalRaw(
     Guid     WorkOrderId,

@@ -12,6 +12,12 @@ public class DashboardRepository : IDashboardRepository
     // (no debería pasar — el seeder la crea al arrancar).
     private const int DefaultPhysicalCapacity = 6;
 
+    /// <summary>
+    /// Meses que viajan en la serie del gráfico de ingresos, contando el actual.
+    /// Doce permite comparar un mes contra el mismo mes del año pasado.
+    /// </summary>
+    private const int MonthlyRevenueMonths = 12;
+
     private readonly AppDbContext _context;
 
     public DashboardRepository(AppDbContext context)
@@ -265,6 +271,72 @@ public class DashboardRepository : IDashboardRepository
             .Take(8)
             .ToList();
 
+        // ── Gráfico: ingresos mes a mes (12 meses móviles) ──────────────────
+        // Mismo criterio de "ingreso" que las tarjetas de arriba: solo órdenes
+        // Completed o Delivered, para no contar como facturado un presupuesto que
+        // el cliente todavía no aprobó.
+        var seriesStart = monthStart.AddMonths(-(MonthlyRevenueMonths - 1));
+
+        var monthlyAgg = await _context.WorkOrders
+            .Where(w => w.CreatedAt >= seriesStart &&
+                        (w.CurrentStatus == WorkOrderStatus.Completed ||
+                         w.CurrentStatus == WorkOrderStatus.Delivered))
+            .GroupBy(w => new { w.CreatedAt.Year, w.CreatedAt.Month })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                Revenue = g.Sum(w => w.TotalAmount),
+                Count   = g.Count(),
+            })
+            .ToListAsync(cancellationToken);
+
+        var monthlyMap = monthlyAgg.ToDictionary(x => (x.Year, x.Month));
+
+        // Rellenamos los meses sin facturación con 0. Un mes ausente haría que el
+        // gráfico dibuje dos meses no consecutivos como si fueran seguidos.
+        var monthlyRevenue = Enumerable.Range(0, MonthlyRevenueMonths)
+            .Select(offset =>
+            {
+                var m = seriesStart.AddMonths(offset);
+                monthlyMap.TryGetValue((m.Year, m.Month), out var row);
+                return new MonthlyRevenueRaw(m.Year, m.Month, row?.Revenue ?? 0m, row?.Count ?? 0);
+            })
+            .ToList();
+
+        // ── Widget: recepcionistas por órdenes registradas este mes ─────────
+        // CreatedByUserId apunta al usuario de Identity, así que el ranking se
+        // resuelve contra Receptionist.ApplicationUserId. Las órdenes que abrió el
+        // admin no matchean con ningún recepcionista y quedan fuera a propósito:
+        // el widget mide el trabajo del mostrador, no el del dueño.
+        var registeredAgg = await _context.WorkOrders
+            .Where(w => w.CreatedAt >= monthStart &&
+                        w.CreatedByUserId != null &&
+                        w.CurrentStatus != WorkOrderStatus.Cancelled)
+            .GroupBy(w => w.CreatedByUserId!.Value)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var registeredUserIds = registeredAgg.Select(x => x.UserId).ToList();
+        var receptionists = await _context.Receptionists
+            .Where(r => registeredUserIds.Contains(r.ApplicationUserId))
+            .Select(r => new { r.Id, r.ApplicationUserId, r.FirstName, r.LastName })
+            .ToListAsync(cancellationToken);
+
+        var receptionistByUserId = receptionists.ToDictionary(r => r.ApplicationUserId);
+
+        var topReceptionists = registeredAgg
+            .Where(x => receptionistByUserId.ContainsKey(x.UserId))
+            .Select(x =>
+            {
+                var r = receptionistByUserId[x.UserId];
+                return new TopReceptionistRaw(r.Id, r.FirstName, r.LastName, x.Count);
+            })
+            .OrderByDescending(x => x.RegisteredCount)
+            .ThenBy(x => x.LastName)
+            .Take(5)
+            .ToList();
+
         var result = new DashboardRawData
         {
             RecentOrders    = recentOrders,
@@ -282,6 +354,8 @@ public class DashboardRepository : IDashboardRepository
             TopMechanics        = topMechanics,
             TopServices         = topServices,
             VehiclesToPickup    = vehiclesToPickup,
+            MonthlyRevenue      = monthlyRevenue,
+            TopReceptionists    = topReceptionists,
         };
 
         if (aggregates is not null)

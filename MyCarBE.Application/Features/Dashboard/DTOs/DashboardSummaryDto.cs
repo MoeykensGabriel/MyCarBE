@@ -92,6 +92,27 @@ public record VehicleToPickupDto(
     int      DaysWaiting
 );
 
+/// <summary>
+/// Un punto de la serie de ingresos del gráfico. Label ya viene armado por el
+/// backend ("Ago 26") para que el eje no dependa de la locale del navegador.
+/// </summary>
+public record MonthlyRevenueDto(
+    int     Year,
+    int     Month,
+    string  Label,
+    decimal Revenue,
+    int     OrdersCount
+);
+
+/// <summary>
+/// Ranking de recepcionistas por órdenes registradas en el período actual.
+/// </summary>
+public record TopReceptionistDto(
+    Guid   ReceptionistId,
+    string FullName,
+    int    RegisteredCount
+);
+
 public record DashboardSummaryDto(
     // Semáforo principal — órdenes que necesitan atención inmediata
     int PendingApprovals,
@@ -125,5 +146,11 @@ public record DashboardSummaryDto(
     /// <summary>Top 5 servicios más vendidos en el mes actual.</summary>
     IReadOnlyList<TopServiceDto> TopServices,
     /// <summary>Vehículos en Completed esperando ser retirados, ordenados por antigüedad.</summary>
-    IReadOnlyList<VehicleToPickupDto> VehiclesToPickup
+    IReadOnlyList<VehicleToPickupDto> VehiclesToPickup,
+
+    /// <summary>Ingresos mes a mes (12 meses móviles), del más viejo al más nuevo y sin huecos.</summary>
+    IReadOnlyList<MonthlyRevenueDto> MonthlyRevenue,
+
+    /// <summary>Top 5 recepcionistas por órdenes registradas en el mes actual.</summary>
+    IReadOnlyList<TopReceptionistDto> TopReceptionists
 );

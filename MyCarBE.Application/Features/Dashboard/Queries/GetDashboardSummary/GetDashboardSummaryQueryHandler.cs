@@ -105,6 +105,24 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
                 DaysWaiting:         Math.Max(0, (int)Math.Floor((now - v.CompletedAt).TotalDays))))
             .ToList();
 
+        // La etiqueta del eje se arma acá y no en el front: el gráfico tiene que decir
+        // los meses en español sin depender de la locale del navegador del usuario.
+        var monthlyRevenue = data.MonthlyRevenue
+            .Select(m => new MonthlyRevenueDto(
+                Year:        m.Year,
+                Month:       m.Month,
+                Label:       $"{MonthAbbreviations[m.Month - 1]} {m.Year % 100:D2}",
+                Revenue:     m.Revenue,
+                OrdersCount: m.OrdersCount))
+            .ToList();
+
+        var topReceptionists = data.TopReceptionists
+            .Select(r => new TopReceptionistDto(
+                ReceptionistId:  r.ReceptionistId,
+                FullName:        $"{r.FirstName} {r.LastName}".Trim(),
+                RegisteredCount: r.RegisteredCount))
+            .ToList();
+
         return new DashboardSummaryDto(
             PendingApprovals:   byStatus.AwaitingApproval,
             ActiveOrders:       activeOrders,
@@ -119,7 +137,12 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
             ExpiringApprovals:  expiringApprovals,
             TopMechanics:       topMechanics,
             TopServices:        topServices,
-            VehiclesToPickup:   vehiclesToPickup
+            VehiclesToPickup:   vehiclesToPickup,
+            MonthlyRevenue:     monthlyRevenue,
+            TopReceptionists:   topReceptionists
         );
     }
+
+    private static readonly string[] MonthAbbreviations =
+        ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 }
