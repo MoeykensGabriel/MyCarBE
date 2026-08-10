@@ -31,7 +31,8 @@ public class GetVehicleByIdQueryHandler : IRequestHandler<GetVehicleByIdQuery, V
         var vehicle = await _repository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.Vehicle), request.Id);
 
-        if (!_currentUser.IsAdmin)
+        // La oficina abre la ficha de cualquier vehículo del taller; el cliente, la de los suyos.
+        if (!_currentUser.IsStaff)
         {
             var ownedByCustomer = _currentUser.CustomerId.HasValue &&
                                   vehicle.CustomerId == _currentUser.CustomerId;

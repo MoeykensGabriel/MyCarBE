@@ -7,8 +7,13 @@ namespace MyCarBE.Application.Features.VehicleDocuments;
 
 /// <summary>
 /// Guard reutilizable: valida que el usuario actual tenga ownership sobre un vehículo.
-/// Admin pasa siempre. Customer pasa si el vehículo es suyo. Fleet contact pasa si pertenece
-/// a su flota. Cualquier otro rol → ForbiddenException. Si no existe → NotFoundException.
+/// La oficina (Admin y recepción) pasa siempre. Customer pasa si el vehículo es suyo.
+/// Fleet contact pasa si pertenece a su flota. Cualquier otro → NotFoundException.
+///
+/// Lo usan ~16 handlers: documentos, cubiertas, batería, aceite, lecturas de km y viajes.
+/// Preguntaba solo por IsAdmin, así que el recepcionista no podía cargarle a un vehículo
+/// ni el kilometraje ni una cubierta ni un documento — desde una sola línea se le caía
+/// media pantalla de la ficha.
 /// </summary>
 internal static class VehicleOwnershipGuard
 {
@@ -21,7 +26,7 @@ internal static class VehicleOwnershipGuard
         var vehicle = await vehicleRepository.GetByIdAsync(vehicleId, cancellationToken)
             ?? throw new NotFoundException(nameof(Vehicle), vehicleId);
 
-        if (currentUser.IsAdmin) return vehicle;
+        if (currentUser.IsStaff) return vehicle;
 
         if (currentUser.CustomerId.HasValue
             && vehicle.CustomerId == currentUser.CustomerId)

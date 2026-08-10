@@ -34,8 +34,10 @@ public class GetWorkOrdersQueryHandler : IRequestHandler<GetWorkOrdersQuery, Pag
         var from      = request.From;
         var to        = request.To;
 
-        // Customer: ignora query params, usa sus propios IDs del JWT
-        if (!_currentUser.IsAdmin)
+        // Customer: ignora query params, usa sus propios IDs del JWT.
+        // La oficina (Admin y recepción) no entra acá: gestiona todo el taller y sigue de largo
+        // al switch de abajo, donde manda el filtro que eligió en pantalla.
+        if (!_currentUser.IsStaff)
         {
             if (_currentUser.FleetId.HasValue)
                 return await MapPagedAsync(
@@ -45,10 +47,12 @@ public class GetWorkOrdersQueryHandler : IRequestHandler<GetWorkOrdersQuery, Pag
                 return await MapPagedAsync(
                     await _repository.GetByCustomerIdAtEntryPagedAsync(_currentUser.CustomerId.Value, status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken));
 
+            // Un usuario sin cliente ni flota detrás (hoy, el mecánico) no tiene órdenes
+            // propias que listar: su trabajo lo ve por "mis tareas" y "mis inspecciones".
             return new PagedResult<WorkOrderSummaryDto>([], 0, page, pageSize);
         }
 
-        // Admin: filtra por el parámetro provisto; sin filtro → todas las órdenes
+        // Oficina: filtra por el parámetro provisto; sin filtro → todas las órdenes
         var paged = request switch
         {
             { VehicleId:  { } id } => await _repository.GetByVehicleIdPagedAsync(id, status, statuses, search, ownerType, page, pageSize, from, to, cancellationToken),
