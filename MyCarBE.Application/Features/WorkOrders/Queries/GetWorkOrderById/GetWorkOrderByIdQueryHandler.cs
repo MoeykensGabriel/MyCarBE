@@ -3,6 +3,7 @@ using MediatR;
 using MyCarBE.Application.Common.Exceptions;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Interfaces.Repositories;
+using MyCarBE.Application.Common.Security;
 using MyCarBE.Application.Features.WorkOrders.DTOs;
 
 namespace MyCarBE.Application.Features.WorkOrders.Queries.GetWorkOrderById;
@@ -28,21 +29,7 @@ public class GetWorkOrderByIdQueryHandler : IRequestHandler<GetWorkOrderByIdQuer
         var workOrder = await _repository.GetWithFullDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.WorkOrder), request.Id);
 
-        if (!_currentUser.IsAdmin)
-        {
-            var ownedByCustomer    = _currentUser.CustomerId.HasValue &&
-                                     workOrder.CustomerIdAtEntry == _currentUser.CustomerId;
-
-            var ownedByFleet       = _currentUser.FleetId.HasValue &&
-                                     workOrder.FleetIdAtEntry == _currentUser.FleetId;
-
-            // Receptionist solo puede ver la orden que ella misma creó (pantalla de confirmación).
-            var createdByThisUser  = _currentUser.IsReceptionist &&
-                                     workOrder.CreatedByUserId == _currentUser.UserId;
-
-            if (!ownedByCustomer && !ownedByFleet && !createdByThisUser)
-                throw new NotFoundException(nameof(Domain.Entities.WorkOrder), request.Id);
-        }
+        WorkOrderAccess.EnsureCanView(workOrder, _currentUser);
 
         return _mapper.Map<WorkOrderDetailDto>(workOrder);
     }

@@ -4,6 +4,7 @@ using MyCarBE.Application.Common.Exceptions;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Interfaces.Repositories;
 using MyCarBE.Application.Common.Models;
+using MyCarBE.Application.Common.Security;
 using MyCarBE.Application.Features.InspectionReports.DTOs;
 using MyCarBE.Application.Features.WorkOrders.DTOs;
 using MyCarBE.Domain.Entities;
@@ -66,17 +67,7 @@ public class GetWorkOrderClosingPdfQueryHandler
 
         // Ownership: la oficina ve cualquier orden; el cliente solo las suyas (directas o
         // vía flota). Mismo criterio que el PDF del presupuesto.
-        if (!_currentUser.IsAdmin && !_currentUser.IsReceptionist)
-        {
-            var customerId = _currentUser.CustomerId;
-            var fleetId    = _currentUser.FleetId;
-
-            var ownsAsCustomer = customerId.HasValue && workOrder.CustomerIdAtEntry == customerId;
-            var ownsViaFleet   = fleetId.HasValue    && workOrder.FleetIdAtEntry    == fleetId;
-
-            if (!ownsAsCustomer && !ownsViaFleet)
-                throw new ForbiddenException("No tenés permiso para descargar este informe.");
-        }
+        WorkOrderAccess.EnsureCanView(workOrder, _currentUser);
 
         var vehicle = await _vehicleRepository.GetByIdAsync(workOrder.VehicleId, cancellationToken)
             ?? throw new NotFoundException(nameof(Vehicle), workOrder.VehicleId);

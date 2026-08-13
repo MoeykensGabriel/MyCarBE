@@ -28,8 +28,9 @@ public class GetCustomerByIdQueryHandler : IRequestHandler<GetCustomerByIdQuery,
         var customer = await _repository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.Customer), request.Id);
 
-        // Customer solo puede ver su propio perfil
-        if (!_currentUser.IsAdmin && customer.Id != _currentUser.CustomerId)
+        // La oficina abre la ficha de cualquier cliente (la necesita para atender el mostrador);
+        // el cliente, solo la suya.
+        if (!_currentUser.IsStaff && customer.Id != _currentUser.CustomerId)
             throw new NotFoundException(nameof(Domain.Entities.Customer), request.Id);
 
         return _mapper.Map<CustomerDto>(customer);

@@ -4,6 +4,7 @@ using MyCarBE.Application.Common.Exceptions;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Interfaces.Repositories;
 using MyCarBE.Application.Common.Models;
+using MyCarBE.Application.Common.Security;
 using MyCarBE.Application.Features.WorkOrders.DTOs;
 using MyCarBE.Domain.Entities;
 using MyCarBE.Domain.Enums;
@@ -55,19 +56,8 @@ public class GetWorkOrderQuotePdfQueryHandler : IRequestHandler<GetWorkOrderQuot
                 "Esta orden es de solo inspección: no tiene presupuesto. El resultado de la " +
                 "inspección se consulta en el detalle de la orden.");
 
-        // Ownership: si el usuario es Customer, solo puede descargar el PDF
-        // de sus propias órdenes (directas o vía flota). Admin pasa siempre.
-        if (!_currentUser.IsAdmin)
-        {
-            var customerId = _currentUser.CustomerId;
-            var fleetId    = _currentUser.FleetId;
-
-            var ownsAsCustomer = customerId.HasValue && workOrder.CustomerIdAtEntry == customerId;
-            var ownsViaFleet   = fleetId.HasValue    && workOrder.FleetIdAtEntry    == fleetId;
-
-            if (!ownsAsCustomer && !ownsViaFleet)
-                throw new ForbiddenException("No tenés permiso para descargar este presupuesto.");
-        }
+        // La oficina descarga el presupuesto de cualquier orden; el cliente, el de las suyas.
+        WorkOrderAccess.EnsureCanView(workOrder, _currentUser);
 
         var vehicle = await _vehicleRepository.GetByIdAsync(workOrder.VehicleId, cancellationToken)
             ?? throw new NotFoundException(nameof(Vehicle), workOrder.VehicleId);
