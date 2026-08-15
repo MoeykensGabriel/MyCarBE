@@ -28,8 +28,13 @@ public class MechanicsController : ControllerBase
 
     // ── Gestión (Admin) ──────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Listado de mecánicos. La oficina lo necesita para ASIGNAR trabajos (assign/unassign de
+    /// work-order-services son Admin,Receptionist desde 2026-07-02): estaba cerrado acá, así que
+    /// el recepcionista veía el selector de mecánicos vacío. El alta/baja/edición sigue solo-Admin.
+    /// </summary>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(PagedResult<MechanicDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? search,

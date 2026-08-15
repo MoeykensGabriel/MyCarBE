@@ -134,7 +134,7 @@ public class WorkOrdersController : ControllerBase
     /// Completed → Delivered | Cancelled
     /// </summary>
     [HttpPut("{id:guid}/status")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -156,6 +156,8 @@ public class WorkOrdersController : ControllerBase
     /// Pasar ambos null borra el agendado. Solo Admin.
     /// </summary>
     [HttpPost("{id:guid}/schedule")]
+    // Queda solo-Admin a propósito: el calendario se descartó y ningún cliente llama a este
+    // endpoint. No se abre lo que no se usa.
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -176,7 +178,7 @@ public class WorkOrdersController : ControllerBase
     /// Actualiza las notas del cliente y/o del técnico. Solo Admin.
     /// </summary>
     [HttpPatch("{id:guid}/notes")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderSummaryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateNotes(
@@ -196,7 +198,7 @@ public class WorkOrdersController : ControllerBase
     /// Solo Admin.
     /// </summary>
     [HttpPost("{id:guid}/services")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -218,7 +220,7 @@ public class WorkOrdersController : ControllerBase
     /// Solo Admin.
     /// </summary>
     [HttpPost("{id:guid}/services/ad-hoc")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -241,7 +243,7 @@ public class WorkOrdersController : ControllerBase
     public record UpdateServicePriceBody(decimal Price);
 
     [HttpPatch("{id:guid}/services/{serviceId:guid}/price")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -292,7 +294,7 @@ public class WorkOrdersController : ControllerBase
     /// Elimina (soft delete) una foto de la orden. Solo Admin.
     /// </summary>
     [HttpDelete("{id:guid}/photos/{photoId:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeletePhoto(
@@ -310,7 +312,7 @@ public class WorkOrdersController : ControllerBase
     /// Solo Admin. Solo desde Diagnosing.
     /// </summary>
     [HttpPost("{id:guid}/send-quote")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -326,7 +328,7 @@ public class WorkOrdersController : ControllerBase
     /// vencimiento e invalida el link de aprobación vigente. Solo Admin.
     /// </summary>
     [HttpPost("{id:guid}/revise-quote")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -348,7 +350,7 @@ public class WorkOrdersController : ControllerBase
     /// comercial.
     /// </summary>
     [HttpPost("{id:guid}/promote-to-work-order")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -370,7 +372,7 @@ public class WorkOrdersController : ControllerBase
     /// Los repuestos aprobados generan un pedido adicional al depósito. Solo Admin.
     /// </summary>
     [HttpPost("{id:guid}/additional-items/decide")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -520,7 +522,7 @@ public class WorkOrdersController : ControllerBase
     /// Elimina (soft delete) un servicio de la orden y recalcula el total. Solo Admin.
     /// </summary>
     [HttpDelete("{id:guid}/services/{serviceId:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -544,7 +546,7 @@ public class WorkOrdersController : ControllerBase
     /// Approved/InProgress entra como adicional Pending. Solo Admin.
     /// </summary>
     [HttpPost("{id:guid}/parts")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -565,7 +567,7 @@ public class WorkOrdersController : ControllerBase
     /// Solo Admin, solo en Diagnosing. El admin elige cuáles propuestas pasan al presupuesto.
     /// </summary>
     [HttpPost("{id:guid}/convert-proposals")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -585,7 +587,7 @@ public class WorkOrdersController : ControllerBase
     /// Edita un repuesto. Solo Admin, solo en Diagnosing, solo si no fue congelado.
     /// </summary>
     [HttpPatch("{id:guid}/parts/{partId:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -606,7 +608,7 @@ public class WorkOrdersController : ControllerBase
     /// Elimina (soft delete) un repuesto. Solo Admin, solo en Diagnosing, solo si no fue congelado.
     /// </summary>
     [HttpDelete("{id:guid}/parts/{partId:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(WorkOrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -622,10 +624,15 @@ public class WorkOrdersController : ControllerBase
 
     /// <summary>
     /// Lista los reportes de inspección consolidados por área de una orden.
-    /// Para el panel admin que decide si cerrar la inspección y pasar a cotizar.
+    /// Para el panel de oficina que decide si cerrar la inspección y pasar a cotizar.
+    ///
+    /// Lo lee la oficina entera, no solo el dueño: marcar "sin novedades", postergar un área,
+    /// deshacer y cerrar la inspección ya eran Admin,Receptionist, pero este GET —el que
+    /// alimenta el panel donde se hace todo eso— había quedado en Admin. El recepcionista
+    /// abría una orden en inspección y el panel le daba 403.
     /// </summary>
     [HttpGet("{id:guid}/inspection-reports")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Receptionist")]
     [ProducesResponseType(typeof(IReadOnlyList<InspectionReportDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetInspectionReports(Guid id, CancellationToken cancellationToken)
