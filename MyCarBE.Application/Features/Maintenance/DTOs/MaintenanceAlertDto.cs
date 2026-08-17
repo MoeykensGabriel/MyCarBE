@@ -15,5 +15,13 @@ public record MaintenanceAlertDto(
     string                   Brand,
     string                   Model,
     string                   Title,
-    string                   Detail
+    string                   Detail,
+
+    /// <summary>
+    /// Cuándo se estima que vence, según el ritmo de uso del vehículo. Null cuando no hay
+    /// lecturas suficientes para medirlo, cuando el auto está parado, o cuando ya venció
+    /// (ahí no hay nada que proyectar). El texto de <paramref name="Detail"/> ya lo
+    /// incorpora; el campo va aparte para que la card pueda mostrarlo como fecha.
+    /// </summary>
+    DateTime?                EstimatedDueDate = null
 );
