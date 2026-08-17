@@ -17,5 +17,9 @@ public record GetVehiclesByOwnerQuery(
     int    PageSize   = 20,
     // Orden del listado: "alphabetical" (marca/modelo), "plate" (patente), o
     // "recent" (más nuevo primero, default histórico). Null = "recent".
-    string? Sort      = null
+    string? Sort      = null,
+    // Solo los vehículos que deben actualizar el kilometraje, según el umbral del taller.
+    // Lo usa el aviso de "X vehículos necesitan que actualices su kilometraje" para poder
+    // mostrar CUÁLES son en vez de dejar al cliente buscándolos en la lista completa.
+    bool MileageDueOnly = false
 ) : IRequest<PagedResult<VehicleDto>>;

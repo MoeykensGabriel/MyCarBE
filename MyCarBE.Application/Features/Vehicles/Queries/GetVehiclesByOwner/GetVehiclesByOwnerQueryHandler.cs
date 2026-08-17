@@ -59,11 +59,17 @@ public class GetVehiclesByOwnerQueryHandler : IRequestHandler<GetVehiclesByOwner
             }
         }
 
-        var paged = await _repository.SearchPagedAsync(
-            request.Search, customerId, fleetId, page, pageSize, request.Sort, cancellationToken);
-
-        // Recordatorio de km: marcar los vehículos con lectura vencida según el umbral del taller.
+        // El umbral del taller sirve para dos cosas: marcar cada vehículo como vencido (abajo)
+        // y, cuando se pide el filtro, acotar la consulta misma. Una sola lectura para ambas.
         var reminderDays = (await _settingsRepository.GetAsync(cancellationToken)).MileageReminderDays;
+
+        DateTime? staleBefore = request.MileageDueOnly
+            ? DateTime.UtcNow.AddDays(-reminderDays)
+            : null;
+
+        var paged = await _repository.SearchPagedAsync(
+            request.Search, customerId, fleetId, page, pageSize, request.Sort,
+            staleBefore, cancellationToken);
 
         var items = _mapper.Map<IReadOnlyList<VehicleDto>>(paged.Items)
             .Select(dto => MileageStaleness.Enrich(dto, reminderDays))
