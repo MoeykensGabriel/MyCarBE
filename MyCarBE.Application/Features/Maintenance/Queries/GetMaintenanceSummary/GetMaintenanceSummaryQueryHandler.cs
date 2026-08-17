@@ -20,6 +20,7 @@ public class GetMaintenanceSummaryQueryHandler
     private readonly IVehicleBatteryRepository        _batteryRepository;
     private readonly IVehicleTireRepository           _tireRepository;
     private readonly IVehicleMileageReadingRepository _readingRepository;
+    private readonly IWorkshopSettingsRepository      _settingsRepository;
     private readonly ICurrentUserService              _currentUser;
 
     public GetMaintenanceSummaryQueryHandler(
@@ -27,13 +28,15 @@ public class GetMaintenanceSummaryQueryHandler
         IVehicleBatteryRepository        batteryRepository,
         IVehicleTireRepository           tireRepository,
         IVehicleMileageReadingRepository readingRepository,
+        IWorkshopSettingsRepository      settingsRepository,
         ICurrentUserService              currentUser)
     {
-        _alertRepository   = alertRepository;
-        _batteryRepository = batteryRepository;
-        _tireRepository    = tireRepository;
-        _readingRepository = readingRepository;
-        _currentUser       = currentUser;
+        _alertRepository    = alertRepository;
+        _batteryRepository  = batteryRepository;
+        _tireRepository     = tireRepository;
+        _readingRepository  = readingRepository;
+        _settingsRepository = settingsRepository;
+        _currentUser        = currentUser;
     }
 
     public async Task<IReadOnlyList<MaintenanceAlertDto>> Handle(
@@ -64,6 +67,8 @@ public class GetMaintenanceSummaryQueryHandler
         // Ritmo de uso por vehículo, para poder decirle al cliente "800 km" Y "unos 16 días".
         // Una sola query para todos los vehículos del cliente: acá una flota puede traer
         // decenas de alertas, y resolver el ritmo de a un vehículo sería un N+1.
+        var reminderDays = (await _settingsRepository.GetAsync(cancellationToken)).MileageReminderDays;
+
         var vehicleIds = alerts.Select(a => a.Vehicle.Id).Distinct().ToList();
         var spans      = await _readingRepository.GetSpansByVehiclesAsync(vehicleIds, cancellationToken);
         var rateByVehicle = spans.ToDictionary(
@@ -102,17 +107,21 @@ public class GetMaintenanceSummaryQueryHandler
             // Si la salud es la que marca la alerta, mostramos ese motivo en vez del contador.
             bool healthDriven = floor is not null && eval.Severity == floor && healthReason is not null;
 
+            var freshness = MileageFreshness.Describe(alert.Vehicle.MileageUpdatedAt, reminderDays, now);
+
             result.Add(new MaintenanceAlertDto(
-                Id:           alert.Id,
-                Type:         (MaintenanceAlertType)(int)alert.ItemType,
-                Severity:     eval.Severity.Value,
-                VehicleId:    alert.Vehicle.Id,
-                LicensePlate: alert.Vehicle.LicensePlate,
-                Brand:        alert.Vehicle.Brand,
-                Model:        alert.Vehicle.Model,
-                Title:            alert.Title,
-                Detail:           healthDriven ? healthReason! : BuildDetail(eval),
-                EstimatedDueDate: eval.EstimatedDueDate));
+                Id:                   alert.Id,
+                Type:                 (MaintenanceAlertType)(int)alert.ItemType,
+                Severity:             eval.Severity.Value,
+                VehicleId:            alert.Vehicle.Id,
+                LicensePlate:         alert.Vehicle.LicensePlate,
+                Brand:                alert.Vehicle.Brand,
+                Model:                alert.Vehicle.Model,
+                Title:                alert.Title,
+                Detail:               healthDriven ? healthReason! : BuildDetail(eval),
+                EstimatedDueDate:     eval.EstimatedDueDate,
+                DaysSinceLastReading: freshness.DaysSince,
+                ReadingIsStale:       freshness.IsStale));
         }
 
         // Críticas primero; desempate estable por patente y tipo.

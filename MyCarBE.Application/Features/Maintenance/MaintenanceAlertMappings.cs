@@ -74,10 +74,15 @@ public static class MaintenanceAlertMappings
     /// configuración de alertas) no lo pasan a propósito: el front invalida y vuelve a leer
     /// de GetVehicleMaintenanceAlerts, que sí lo resuelve.
     /// </param>
+    /// <param name="freshness">
+    /// Qué tan vieja es la lectura con la que se estimó. Sin esto, una fecha calculada con
+    /// datos de hace meses se muestra con la misma cara que una calculada con datos de ayer.
+    /// </param>
     public static MaintenanceAlertConfigDto ToConfigDto(
         this MaintenanceAlert alert, int currentMileage, DateTime now,
         MaintenanceAlertSeverity? severityFloor = null, string? healthReason = null,
-        MileageRateCalculator.MileageRate? rate = null)
+        MileageRateCalculator.MileageRate? rate = null,
+        MileageFreshness.Freshness freshness = default)
     {
         var e = MaintenanceAlertStatusCalculator.Evaluate(alert, currentMileage, now, severityFloor, rate);
 
@@ -103,6 +108,8 @@ public static class MaintenanceAlertMappings
             e.EstimatedDueDate,
             // Solo se informa el ritmo cuando efectivamente se usó para estimar: mostrar
             // "0 km/día" al lado de una fila sin estimación confundiría más de lo que explica.
-            e.EstimatedDueDate is not null ? rate?.KmPerDay : null);
+            e.EstimatedDueDate is not null ? rate?.KmPerDay : null,
+            freshness.DaysSince,
+            freshness.IsStale);
     }
 }

@@ -15,6 +15,7 @@ public class GetVehicleMaintenanceAlertsQueryHandler
     private readonly IVehicleBatteryRepository        _batteryRepository;
     private readonly IVehicleTireRepository           _tireRepository;
     private readonly IVehicleMileageReadingRepository _readingRepository;
+    private readonly IWorkshopSettingsRepository      _settingsRepository;
     private readonly ICurrentUserService              _currentUser;
 
     public GetVehicleMaintenanceAlertsQueryHandler(
@@ -23,14 +24,16 @@ public class GetVehicleMaintenanceAlertsQueryHandler
         IVehicleBatteryRepository        batteryRepository,
         IVehicleTireRepository           tireRepository,
         IVehicleMileageReadingRepository readingRepository,
+        IWorkshopSettingsRepository      settingsRepository,
         ICurrentUserService              currentUser)
     {
-        _vehicleRepository = vehicleRepository;
-        _alertRepository   = alertRepository;
-        _batteryRepository = batteryRepository;
-        _tireRepository    = tireRepository;
-        _readingRepository = readingRepository;
-        _currentUser       = currentUser;
+        _vehicleRepository  = vehicleRepository;
+        _alertRepository    = alertRepository;
+        _batteryRepository  = batteryRepository;
+        _tireRepository     = tireRepository;
+        _readingRepository  = readingRepository;
+        _settingsRepository = settingsRepository;
+        _currentUser        = currentUser;
     }
 
     public async Task<IReadOnlyList<MaintenanceAlertConfigDto>> Handle(
@@ -55,6 +58,12 @@ public class GetVehicleMaintenanceAlertsQueryHandler
             ? MileageRateCalculator.Calculate(
                 span.FirstMileage, span.FirstAt, span.LastMileage, span.LastAt, span.ReadingsCount)
             : null;
+
+        // Hace cuánto fue la última lectura, contra el umbral del taller. Es lo que le da
+        // contexto a la estimación de arriba: la misma fecha significa cosas muy distintas
+        // según si el dato es de ayer o de hace cuatro meses.
+        var reminderDays = (await _settingsRepository.GetAsync(cancellationToken)).MileageReminderDays;
+        var freshness    = MileageFreshness.Describe(vehicle.MileageUpdatedAt, reminderDays, now);
 
         // Si el taller configuró alerta de batería o de cubiertas, traemos la salud medida para
         // que esas filas respeten lo que vio en la inspección y no sean meros temporizadores.
@@ -91,7 +100,7 @@ public class GetVehicleMaintenanceAlertsQueryHandler
                 floor  = TireHealthSignal.SeverityFloor(ts);
                 reason = TireHealthSignal.Reason(ts);
             }
-            return a.ToConfigDto(vehicle.CurrentMileage, now, floor, reason, rate);
+            return a.ToConfigDto(vehicle.CurrentMileage, now, floor, reason, rate, freshness);
         }).ToList();
     }
 }
