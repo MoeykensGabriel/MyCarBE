@@ -39,10 +39,13 @@ public class VehiclesController : ControllerBase
         [FromQuery] int     page     = 1,
         [FromQuery] int     pageSize = 20,
         [FromQuery] string? sort     = null,
+        // Solo los que deben kilometraje. Lo usa el aviso del Inicio para mostrar CUÁLES son.
+        [FromQuery] bool    mileageDueOnly = false,
         CancellationToken   cancellationToken = default)
     {
         var result = await _sender.Send(
-            new GetVehiclesByOwnerQuery(customerId, fleetId, search, page, pageSize, sort), cancellationToken);
+            new GetVehiclesByOwnerQuery(customerId, fleetId, search, page, pageSize, sort, mileageDueOnly),
+            cancellationToken);
         return Ok(result);
     }
 

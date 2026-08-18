@@ -1,9 +1,10 @@
-using System.Text;
+﻿using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyCarBE.API.Middleware;
+using MyCarBE.API.Serialization;
 using MyCarBE.API.Services;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Extensions;
@@ -139,7 +140,14 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // Controllers + Swagger con soporte JWT
-builder.Services.AddControllers();
+// Las fechas salen SIEMPRE como UTC explicito (con la Z). Sin esto, las columnas
+// "timestamp without time zone" viajaban sin marca de zona y el navegador las tomaba
+// como hora local: toda la app mostraba 3 horas de mas en Argentina.
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+    options.JsonSerializerOptions.Converters.Add(new UtcNullableDateTimeConverter());
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

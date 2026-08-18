@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace MyCarBE.Application.Features.WorkOrders.Commands.AddAdHocServiceToWorkOrder;
 
@@ -21,9 +21,12 @@ public class AddAdHocServiceToWorkOrderCommandValidator
             .GreaterThanOrEqualTo(0).WithMessage("El precio no puede ser negativo.")
             .LessThanOrEqualTo(99_999_999).WithMessage("El precio es demasiado alto.");
 
+        // El tope era 24 horas, y dejaba afuera cualquier trabajo de varios días: una caja
+        // que lleva tres jornadas se carga como 72 horas. 999 h (~41 días) sigue frenando el
+        // error de tipeo sin limitar un trabajo real.
         RuleFor(x => x.EstimatedDurationMinutes)
             .GreaterThanOrEqualTo(0).WithMessage("La duración no puede ser negativa.")
-            .LessThanOrEqualTo(1440).WithMessage("La duración no puede superar 24 horas (1440 min).");
+            .LessThanOrEqualTo(59_940).WithMessage("La duración no puede superar 999 horas.");
 
         RuleFor(x => x.Quantity)
             .InclusiveBetween(1, 999).WithMessage("La cantidad debe estar entre 1 y 999.");

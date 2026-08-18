@@ -10,24 +10,30 @@ namespace MyCarBE.Application.Features.Maintenance.Queries.GetVehicleMaintenance
 public class GetVehicleMaintenanceAlertsQueryHandler
     : IRequestHandler<GetVehicleMaintenanceAlertsQuery, IReadOnlyList<MaintenanceAlertConfigDto>>
 {
-    private readonly IVehicleRepository          _vehicleRepository;
-    private readonly IMaintenanceAlertRepository _alertRepository;
-    private readonly IVehicleBatteryRepository   _batteryRepository;
-    private readonly IVehicleTireRepository      _tireRepository;
-    private readonly ICurrentUserService         _currentUser;
+    private readonly IVehicleRepository               _vehicleRepository;
+    private readonly IMaintenanceAlertRepository      _alertRepository;
+    private readonly IVehicleBatteryRepository        _batteryRepository;
+    private readonly IVehicleTireRepository           _tireRepository;
+    private readonly IVehicleMileageReadingRepository _readingRepository;
+    private readonly IWorkshopSettingsRepository      _settingsRepository;
+    private readonly ICurrentUserService              _currentUser;
 
     public GetVehicleMaintenanceAlertsQueryHandler(
-        IVehicleRepository          vehicleRepository,
-        IMaintenanceAlertRepository alertRepository,
-        IVehicleBatteryRepository   batteryRepository,
-        IVehicleTireRepository      tireRepository,
-        ICurrentUserService         currentUser)
+        IVehicleRepository               vehicleRepository,
+        IMaintenanceAlertRepository      alertRepository,
+        IVehicleBatteryRepository        batteryRepository,
+        IVehicleTireRepository           tireRepository,
+        IVehicleMileageReadingRepository readingRepository,
+        IWorkshopSettingsRepository      settingsRepository,
+        ICurrentUserService              currentUser)
     {
-        _vehicleRepository = vehicleRepository;
-        _alertRepository   = alertRepository;
-        _batteryRepository = batteryRepository;
-        _tireRepository    = tireRepository;
-        _currentUser       = currentUser;
+        _vehicleRepository  = vehicleRepository;
+        _alertRepository    = alertRepository;
+        _batteryRepository  = batteryRepository;
+        _tireRepository     = tireRepository;
+        _readingRepository  = readingRepository;
+        _settingsRepository = settingsRepository;
+        _currentUser        = currentUser;
     }
 
     public async Task<IReadOnlyList<MaintenanceAlertConfigDto>> Handle(
@@ -40,6 +46,24 @@ public class GetVehicleMaintenanceAlertsQueryHandler
 
         var now    = DateTime.UtcNow;
         var alerts = await _alertRepository.GetByVehicleIdAsync(request.VehicleId, cancellationToken);
+
+        // Ritmo de uso, para estimar cuándo va a vencer cada alerta. Va por los extremos del
+        // historial y no por las últimas N lecturas: el ritmo se mide DESDE la primera, así que
+        // acotar el histórico daría un punto de partida equivocado apenas el vehículo acumule
+        // lecturas. Si todavía no hay dos separadas por un día, queda en null y no se estima.
+        var spans = await _readingRepository.GetSpansByVehiclesAsync(
+            new[] { request.VehicleId }, cancellationToken);
+
+        MileageRateCalculator.MileageRate? rate = spans.TryGetValue(request.VehicleId, out var span)
+            ? MileageRateCalculator.Calculate(
+                span.FirstMileage, span.FirstAt, span.LastMileage, span.LastAt, span.ReadingsCount)
+            : null;
+
+        // Hace cuánto fue la última lectura, contra el umbral del taller. Es lo que le da
+        // contexto a la estimación de arriba: la misma fecha significa cosas muy distintas
+        // según si el dato es de ayer o de hace cuatro meses.
+        var reminderDays = (await _settingsRepository.GetAsync(cancellationToken)).MileageReminderDays;
+        var freshness    = MileageFreshness.Describe(vehicle.MileageUpdatedAt, reminderDays, now);
 
         // Si el taller configuró alerta de batería o de cubiertas, traemos la salud medida para
         // que esas filas respeten lo que vio en la inspección y no sean meros temporizadores.
@@ -76,7 +100,7 @@ public class GetVehicleMaintenanceAlertsQueryHandler
                 floor  = TireHealthSignal.SeverityFloor(ts);
                 reason = TireHealthSignal.Reason(ts);
             }
-            return a.ToConfigDto(vehicle.CurrentMileage, now, floor, reason);
+            return a.ToConfigDto(vehicle.CurrentMileage, now, floor, reason, rate, freshness);
         }).ToList();
     }
 }

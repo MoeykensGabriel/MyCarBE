@@ -68,11 +68,23 @@ public static class MaintenanceAlertMappings
     /// <param name="healthReason">
     /// Texto a mostrar cuando esa señal externa es la que activa la alerta (en vez del contador).
     /// </param>
+    /// <param name="rate">
+    /// Ritmo de uso del vehículo, si se pudo calcular. Sin él la fila sale igual que siempre,
+    /// con la estimación en null. Los command handlers que devuelven este DTO (reset y
+    /// configuración de alertas) no lo pasan a propósito: el front invalida y vuelve a leer
+    /// de GetVehicleMaintenanceAlerts, que sí lo resuelve.
+    /// </param>
+    /// <param name="freshness">
+    /// Qué tan vieja es la lectura con la que se estimó. Sin esto, una fecha calculada con
+    /// datos de hace meses se muestra con la misma cara que una calculada con datos de ayer.
+    /// </param>
     public static MaintenanceAlertConfigDto ToConfigDto(
         this MaintenanceAlert alert, int currentMileage, DateTime now,
-        MaintenanceAlertSeverity? severityFloor = null, string? healthReason = null)
+        MaintenanceAlertSeverity? severityFloor = null, string? healthReason = null,
+        MileageRateCalculator.MileageRate? rate = null,
+        MileageFreshness.Freshness freshness = default)
     {
-        var e = MaintenanceAlertStatusCalculator.Evaluate(alert, currentMileage, now, severityFloor);
+        var e = MaintenanceAlertStatusCalculator.Evaluate(alert, currentMileage, now, severityFloor, rate);
 
         // El motivo de salud solo se muestra si es lo que está marcando (o igualando) la
         // severidad final; si manda el temporizador, dejamos los contadores de siempre.
@@ -91,6 +103,13 @@ public static class MaintenanceAlertMappings
             e.KmRemaining,
             e.DaysRemaining,
             e.Severity,
-            statusReason);
+            statusReason,
+            e.EstimatedDaysFromKm,
+            e.EstimatedDueDate,
+            // Solo se informa el ritmo cuando efectivamente se usó para estimar: mostrar
+            // "0 km/día" al lado de una fila sin estimación confundiría más de lo que explica.
+            e.EstimatedDueDate is not null ? rate?.KmPerDay : null,
+            freshness.DaysSince,
+            freshness.IsStale);
     }
 }

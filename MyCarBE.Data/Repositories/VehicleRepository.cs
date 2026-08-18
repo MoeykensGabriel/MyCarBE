@@ -28,7 +28,8 @@ public class VehicleRepository : Repository<Vehicle>, IVehicleRepository
 
     public async Task<PagedResult<Vehicle>> SearchPagedAsync(
         string? search, Guid? customerId, Guid? fleetId,
-        int page, int pageSize, string? sort = null, CancellationToken cancellationToken = default)
+        int page, int pageSize, string? sort = null,
+        DateTime? mileageStaleBefore = null, CancellationToken cancellationToken = default)
     {
         var query = _context.Vehicles.AsNoTracking().AsQueryable();
 
@@ -37,6 +38,12 @@ public class VehicleRepository : Repository<Vehicle>, IVehicleRepository
             query = query.Where(v => v.CustomerId == customerId);
         else if (fleetId.HasValue)
             query = query.Where(v => v.FleetId == fleetId);
+
+        // Solo los que deben kilometraje. Null cuenta como vencido: nunca hubo lectura, que es
+        // el caso más necesitado de una. Mismo criterio que MileageStaleness, que es quien lo
+        // marca después en el DTO — si uno cambia, el otro tiene que acompañar.
+        if (mileageStaleBefore is { } cutoff)
+            query = query.Where(v => v.MileageUpdatedAt == null || v.MileageUpdatedAt <= cutoff);
 
         // Búsqueda por patente, marca o modelo
         if (!string.IsNullOrWhiteSpace(search))
