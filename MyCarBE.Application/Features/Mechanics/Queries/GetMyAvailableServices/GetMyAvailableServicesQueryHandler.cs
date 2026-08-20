@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using MyCarBE.Application.Common.Exceptions;
 using MyCarBE.Application.Common.Interfaces;
 using MyCarBE.Application.Common.Interfaces.Repositories;
@@ -38,7 +38,6 @@ public class GetMyAvailableServicesQueryHandler
                 ServiceName:              s.NameSnapshot,
                 ServiceDescription:       string.IsNullOrWhiteSpace(s.DescriptionSnapshot) ? null : s.DescriptionSnapshot,
                 Quantity:                 s.Quantity,
-                PriceSnapshot:            s.PriceSnapshot,
                 EstimatedDurationMinutes: s.EstimatedDurationMinutesSnapshot,
                 CreatedAt:                s.CreatedAt,
                 VehicleId:                s.WorkOrder.Vehicle.Id,
